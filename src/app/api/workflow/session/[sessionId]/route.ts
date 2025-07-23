@@ -12,7 +12,7 @@ import {
   getContentSessionStats
 } from '../../../../../lib/content-session-manager'
 import { analyzeSessionProgress } from '../../../../../lib/content-comparison'
-import type { SessionStatus } from '../../../../../types'
+import type { SessionStatus, ContentSession, SessionStats } from '../../../../../types'
 import { createSessionId } from '../../../../../types'
 import type { ApiErrorDetails, MetadataRecord } from '../../../../../types/lint-types'
 
@@ -61,12 +61,19 @@ export async function GET(
     const includeStats = url.searchParams.get('includeStats') === 'true'
     const includeAnalysis = url.searchParams.get('includeAnalysis') === 'true'
 
-    const responseData: any = {
+    const responseData: {
+      session: ContentSession
+      stats?: SessionStats
+      analysis?: unknown
+    } = {
       session
     }
 
     if (includeStats) {
-      responseData.stats = getContentSessionStats(sessionId)
+      const stats = getContentSessionStats(sessionId)
+      if (stats) {
+        responseData.stats = stats
+      }
     }
 
     if (includeAnalysis && session.iterations.length > 0) {

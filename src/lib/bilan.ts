@@ -28,6 +28,7 @@ import {
 } from '@mocksi/bilan-sdk'
 
 import { getEnvVar } from './env'
+import type { AnalyticsEventProperties } from '../types/lint-types'
 
 // Bilan configuration interface
 export interface BilanConfig {
@@ -133,7 +134,7 @@ export async function vote(turnId: string, rating: 1 | -1, comment?: string): Pr
  */
 export async function track(
   eventType: string,
-  properties?: Record<string, any>,
+  properties?: AnalyticsEventProperties,
   content?: { promptText?: string; aiResponse?: string; context?: string }
 ): Promise<void> {
   try {

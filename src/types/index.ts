@@ -127,7 +127,7 @@ export interface BilanEventMetadata {
   systemPromptVersion?: string
   
   // Custom properties
-  [key: string]: any
+  [key: string]: unknown
 }
 
 /**
@@ -163,7 +163,7 @@ export interface AnalyticsEvent {
 export interface JourneyStep {
   stepName: string
   completedAt: number
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 /**
