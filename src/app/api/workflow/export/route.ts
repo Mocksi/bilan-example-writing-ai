@@ -6,7 +6,12 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getContentSession } from '../../../../lib/content-session-manager'
-import { exportContentSession, createContentSummary } from '../../../../lib/content-export'
+import { 
+  exportContentSession, 
+  createContentSummary,
+  VALID_EXPORT_FORMATS,
+  VALID_EXPORT_TEMPLATES
+} from '../../../../lib/content-export'
 import type { ExportFormat, ExportTemplate } from '../../../../lib/content-export'
 import { createSessionId } from '../../../../types'
 
@@ -66,25 +71,23 @@ export async function POST(request: NextRequest): Promise<NextResponse<ExportRes
     }
 
     // Validate export format if provided
-    const validFormats: ExportFormat[] = ['markdown', 'plain_text', 'html', 'json', 'pdf_ready', 'csv', 'docx_compatible']
-    if (body.format && !validFormats.includes(body.format)) {
+    if (body.format && !VALID_EXPORT_FORMATS.includes(body.format)) {
       return NextResponse.json({
         success: false,
         error: {
           code: 'INVALID_FORMAT',
-          message: `Format must be one of: ${validFormats.join(', ')}`
+          message: `Format must be one of: ${VALID_EXPORT_FORMATS.join(', ')}`
         }
       }, { status: 400 })
     }
 
     // Validate template if provided
-    const validTemplates: ExportTemplate[] = ['minimal', 'standard', 'detailed', 'presentation', 'analysis_report', 'archive']
-    if (body.template && !validTemplates.includes(body.template)) {
+    if (body.template && !VALID_EXPORT_TEMPLATES.includes(body.template)) {
       return NextResponse.json({
         success: false,
         error: {
           code: 'INVALID_TEMPLATE',
-          message: `Template must be one of: ${validTemplates.join(', ')}`
+          message: `Template must be one of: ${VALID_EXPORT_TEMPLATES.join(', ')}`
         }
       }, { status: 400 })
     }
@@ -168,8 +171,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           }
         }
       },
-      supportedFormats: ['markdown', 'plain_text', 'html', 'json', 'pdf_ready', 'csv', 'docx_compatible'],
-      supportedTemplates: ['minimal', 'standard', 'detailed', 'presentation', 'analysis_report', 'archive']
+      supportedFormats: VALID_EXPORT_FORMATS,
+      supportedTemplates: VALID_EXPORT_TEMPLATES
     })
 
   } catch (error) {

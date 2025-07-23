@@ -41,6 +41,26 @@ export type ExportTemplate =
   | 'analysis_report'
   | 'archive'
 
+// Arrays for validation - single source of truth
+export const VALID_EXPORT_FORMATS: ExportFormat[] = [
+  'markdown',
+  'plain_text', 
+  'html',
+  'json',
+  'pdf_ready',
+  'csv',
+  'docx_compatible'
+] as const
+
+export const VALID_EXPORT_TEMPLATES: ExportTemplate[] = [
+  'minimal',
+  'standard',
+  'detailed', 
+  'presentation',
+  'analysis_report',
+  'archive'
+] as const
+
 export interface ExportResult {
   content: string
   filename: string
