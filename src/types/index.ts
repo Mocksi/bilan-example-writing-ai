@@ -97,4 +97,84 @@ export const createTurnId = (id: string): TurnId => id as TurnId
  */
 export const generateSessionId = (): SessionId => createSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
 export const generateIterationId = (): IterationId => createIterationId(`iter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
-export const generateTurnId = (): TurnId => createTurnId(`turn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`) 
+export const generateTurnId = (): TurnId => createTurnId(`turn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
+
+/**
+ * Bilan Event Metadata - rich context data sent with analytics events
+ */
+export interface BilanEventMetadata {
+  // Content context
+  contentType: ContentType
+  iterationNumber: number
+  sessionId: SessionId
+  
+  // User feedback context
+  userFeedback?: string
+  refinementType?: 'tone' | 'length' | 'topic' | 'style' | 'other'
+  
+  // Timing context
+  sessionDuration: number
+  responseTime: number
+  userResponseTime?: number
+  
+  // Workflow context
+  previousAttempts: number
+  acceptanceLevel?: AcceptanceLevel
+  
+  // System context
+  modelUsed?: string
+  systemPromptVersion?: string
+  
+  // Custom properties
+  [key: string]: any
+}
+
+/**
+ * Analytics Event Types - standard event taxonomy for Bilan
+ */
+export type AnalyticsEventType = 
+  | 'session_started'
+  | 'content_generated'
+  | 'user_feedback_provided'
+  | 'content_accepted'
+  | 'content_rejected'
+  | 'refinement_requested'
+  | 'session_completed'
+  | 'session_abandoned'
+  | 'frustration_detected'
+
+/**
+ * Analytics Event - structure for events sent to Bilan
+ */
+export interface AnalyticsEvent {
+  eventType: AnalyticsEventType
+  timestamp: number
+  userId: UserId
+  sessionId: SessionId
+  turnId?: TurnId
+  conversationId?: ConversationId
+  metadata: BilanEventMetadata
+}
+
+/**
+ * Journey Step - represents progress through content creation workflow
+ */
+export interface JourneyStep {
+  stepName: string
+  completedAt: number
+  metadata?: Record<string, any>
+}
+
+/**
+ * User Journey - complete workflow tracking
+ */
+export interface UserJourney {
+  journeyId: string
+  journeyName: 'content-creation-workflow'
+  userId: UserId
+  sessionId: SessionId
+  steps: JourneyStep[]
+  startedAt: number
+  completedAt?: number
+  status: 'in_progress' | 'completed' | 'abandoned'
+} 

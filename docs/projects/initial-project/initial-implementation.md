@@ -144,9 +144,8 @@ This document outlines the implementation strategy for the Bilan Content Creatio
 
 2. `feat: implement comprehensive event tracking`
    - Create hooks/useAnalytics.ts
-   - Add turn tracking wrapper with automatic correlation
-   - Implement vote tracking with turnId correlation
-   - Add frustration signal detection
+   - Add turn tracking wrapper
+   - Implement vote tracking with turnId
 
 3. `feat: add conversation and journey tracking`
    - Conversation lifecycle management (start/end)
