@@ -14,33 +14,26 @@ import type {
   ContentIteration,
   SessionStats
 } from '../types'
-import type { MetadataRecord as _MetadataRecord } from '../types/lint-types'
 import { 
   contentSessionManager,
   createContentSession,
-  updateContentSession as _updateContentSession,
   getContentSession,
   completeContentSession,
   addContentIteration
 } from './content-session-manager'
 import { 
-  iterationManager as _iterationManager,
   createIteration,
-  addIterationFeedback,
-  getIterationHistory as _getIterationHistory
+  addIterationFeedback
 } from './iteration-manager'
 import { 
-  refinementProcessor as _refinementProcessor,
   processContentRefinement,
   analyzeFeedbackPatterns
 } from './refinement-processor'
 import { 
-  contentComparisonService as _contentComparisonService,
   analyzeSessionProgress,
   createSideBySideComparison
 } from './content-comparison'
 import { 
-  contentExportService as _contentExportService,
   exportContentSession,
   createContentSummary,
   type ExportOptions
