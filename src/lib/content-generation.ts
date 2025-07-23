@@ -6,11 +6,7 @@
  */
 
 import { aiClient, type GenerationOptions, type GenerationResponse } from './ai-client'
-
-// Local type definitions to avoid import issues
-type ContentType = 'blog' | 'email' | 'social'
-type SessionId = string & { __brand: 'SessionId' }
-type IterationId = string & { __brand: 'IterationId' }
+import type { ContentType, SessionId, IterationId } from '../types'
 
 export interface ContentIteration {
   id: IterationId

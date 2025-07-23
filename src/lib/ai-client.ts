@@ -5,14 +5,13 @@
  * AI inference without any external services or APIs.
  */
 
+import type { ContentType } from '../types'
+
 // Dynamic import to avoid TypeScript issues
 let transformers: any = null
 
 // Type definitions for Transformers.js
 type Pipeline = any
-
-// Import ContentType from our types
-type ContentType = 'blog' | 'email' | 'social'
 
 export interface AIClientConfig {
   model?: string

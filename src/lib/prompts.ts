@@ -5,8 +5,7 @@
  * for optimized content generation across different content types.
  */
 
-// Local type definitions
-type ContentType = 'blog' | 'email' | 'social'
+import type { ContentType } from '../types'
 
 export interface PromptContext {
   contentType: ContentType
