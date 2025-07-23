@@ -555,11 +555,16 @@ export const setupAbandonmentTracking = (): void => {
 
         if (navigator.sendBeacon) {
           const config = getConfig()
-          const endpoint = config?.endpoint || 'http://localhost:3002'
-          navigator.sendBeacon(
-            `${endpoint}/api/events`,
-            JSON.stringify(abandonmentData)
-          )
+          
+          // Only send abandonment data in server mode with a valid endpoint
+          if (config?.mode === 'server' && config.endpoint) {
+            navigator.sendBeacon(
+              `${config.endpoint}/api/events`,
+              JSON.stringify(abandonmentData)
+            )
+          }
+          // In local mode or when endpoint is undefined, skip sendBeacon
+          // as the data should only be processed locally
         }
       } catch (error) {
         // Silently fail - abandonment tracking is best effort

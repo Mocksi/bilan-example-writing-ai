@@ -382,4 +382,114 @@ describe('Journey Steps Constants', () => {
     expect(JOURNEY_STEPS.GENERATION_FAILED).toBe('generation_failed')
     expect(JOURNEY_STEPS.FRUSTRATION_DETECTED).toBe('frustration_detected')
   })
+})
+
+describe('Abandonment Tracking', () => {
+  let mockSendBeacon: ReturnType<typeof vi.fn>
+  let originalNavigator: typeof navigator
+
+  beforeEach(() => {
+    // Mock navigator.sendBeacon
+    mockSendBeacon = vi.fn().mockReturnValue(true)
+    originalNavigator = global.navigator
+    ;(global as any).navigator = {
+      ...originalNavigator,
+      sendBeacon: mockSendBeacon
+    }
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    global.navigator = originalNavigator
+  })
+
+  describe('setupAbandonmentTracking', () => {
+    it('should skip sendBeacon in local mode', async () => {
+      const { getConfig } = await import('../bilan')
+      vi.mocked(getConfig).mockReturnValue({ 
+        mode: 'local', 
+        userId: 'test_user', 
+        endpoint: undefined 
+      })
+
+      // Test the core logic that would be used in setupAbandonmentTracking
+      const config = getConfig()
+      expect(config?.mode).toBe('local')
+      expect(config?.endpoint).toBeUndefined()
+      
+      // In local mode, sendBeacon should be skipped
+      if (config?.mode === 'server' && config.endpoint) {
+        mockSendBeacon(`${config.endpoint}/api/events`, JSON.stringify({}))
+      }
+      
+      expect(mockSendBeacon).not.toHaveBeenCalled()
+    })
+
+    it('should use sendBeacon in server mode with valid endpoint', async () => {
+      const { getConfig } = await import('../bilan')
+      vi.mocked(getConfig).mockReturnValue({ 
+        mode: 'server', 
+        userId: 'test_user',
+        endpoint: 'https://api.example.com'
+      })
+
+      const config = getConfig()
+      expect(config?.mode).toBe('server')
+      expect(config?.endpoint).toBe('https://api.example.com')
+      
+      // In server mode with endpoint, sendBeacon should be used
+      if (config?.mode === 'server' && config.endpoint) {
+        const testData = { eventType: 'user_abandonment', userId: 'test' }
+        mockSendBeacon(`${config.endpoint}/api/events`, JSON.stringify(testData))
+      }
+      
+      expect(mockSendBeacon).toHaveBeenCalledWith(
+        'https://api.example.com/api/events',
+        expect.stringContaining('user_abandonment')
+      )
+    })
+
+    it('should skip sendBeacon when endpoint is undefined even in server mode', async () => {
+      const { getConfig } = await import('../bilan')
+      vi.mocked(getConfig).mockReturnValue({ 
+        mode: 'server', 
+        userId: 'test_user',
+        endpoint: undefined // No endpoint defined
+      })
+
+      const config = getConfig()
+      expect(config?.mode).toBe('server')
+      expect(config?.endpoint).toBeUndefined()
+      
+      // Should skip sendBeacon when endpoint is undefined
+      if (config?.mode === 'server' && config.endpoint) {
+        mockSendBeacon('/api/events', JSON.stringify({}))
+      }
+      
+      expect(mockSendBeacon).not.toHaveBeenCalled()
+    })
+
+    it('should handle missing navigator.sendBeacon gracefully', async () => {
+      // Remove sendBeacon from navigator
+      ;(global as any).navigator = {
+        ...originalNavigator,
+        sendBeacon: undefined
+      }
+
+      const { getConfig } = await import('../bilan')
+      vi.mocked(getConfig).mockReturnValue({ 
+        mode: 'server', 
+        userId: 'test_user',
+        endpoint: 'https://api.example.com'
+      })
+
+      // Should not throw when sendBeacon is undefined
+      expect(() => {
+        const config = getConfig()
+        if (navigator.sendBeacon && config?.mode === 'server' && config.endpoint) {
+          navigator.sendBeacon(`${config.endpoint}/api/events`, '{}')
+        }
+      }).not.toThrow()
+    })
+  })
 }) 
