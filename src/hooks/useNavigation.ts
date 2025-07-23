@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import type { ContentType } from '../types'
 
 /**
@@ -105,23 +106,25 @@ export interface NavigationState {
  * - Supporting session correlation across page transitions
  */
 export function useNavigation() {
-  // For now, we'll use simple state management
-  // Later this can be upgraded to Next.js routing or more sophisticated state management
+  const router = useRouter()
   
   const navigateToHome = useCallback(() => {
-    // TODO: Implement actual navigation
-    console.log('Navigating to home')
-  }, [])
+    router.push('/')
+  }, [router])
 
   const navigateToCreator = useCallback((contentType: ContentType) => {
-    // TODO: Implement actual navigation to content creator
-    console.log('Navigating to creator for:', contentType)
-  }, [])
+    // Navigate to content creator with content type as search parameter
+    router.push(`/create?type=${contentType}`)
+  }, [router])
 
   const navigateToAnalytics = useCallback(() => {
-    // TODO: Open external Bilan dashboard
-    console.log('Opening analytics dashboard')
-    // window.open(BILAN_DASHBOARD_URL, '_blank')
+    // Open external Bilan dashboard in new tab
+    // For now, we'll use a placeholder URL - this should be configured via environment variables
+    const bilanDashboardUrl = process.env.NEXT_PUBLIC_BILAN_ENDPOINT 
+      ? `${process.env.NEXT_PUBLIC_BILAN_ENDPOINT}/dashboard`
+      : 'https://dashboard.bilan.ai' // Fallback placeholder URL
+    
+    window.open(bilanDashboardUrl, '_blank', 'noopener,noreferrer')
   }, [])
 
   return {
