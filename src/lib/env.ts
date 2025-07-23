@@ -37,7 +37,7 @@ export function getEnvVar(key: string, defaultValue: string = ''): string {
 export function getEnvironmentConfig(): EnvironmentConfig {
   const config: EnvironmentConfig = {
     // AI configuration
-    AI_MODEL: getEnvVar('NEXT_PUBLIC_AI_MODEL', 'Xenova/distilgpt2'),
+    AI_MODEL: getEnvVar('NEXT_PUBLIC_AI_MODEL', 'Llama-3.2-1B-Instruct-q4f32_1-MLC'),
     
     // Bilan configuration
     BILAN_ENDPOINT: getEnvVar('NEXT_PUBLIC_BILAN_ENDPOINT'),
