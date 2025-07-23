@@ -70,7 +70,7 @@ interface ContentGenerationLoadingProps {
  * - **Professional Feel**: Creates a polished loading experience
  * 
  * The component integrates with AI content generation workflows by:
- * - Displaying during Transformers.js model initialization
+ * - Displaying during WebLLM model initialization
  * - Showing progress during content generation API calls
  * - Providing contextual messaging for different AI processing stages
  * - Supporting Bilan analytics by clearly defining user wait periods

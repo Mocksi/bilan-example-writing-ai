@@ -6,7 +6,7 @@ A demonstration application showcasing how to integrate Bilan SDK into an AI-pow
 
 ## Features
 
-- 🤖 **AI Content Generation**: Local Transformers.js for blog posts, emails, and social media
+- 🤖 **AI Content Generation**: Local WebLLM inference for blog posts, emails, and social media
 - 📊 **Comprehensive Analytics**: Full Bilan SDK integration with turn tracking, user feedback, and journey analytics
 - 🎨 **Modern UI**: Mantine v7 components with responsive design
 - 🔄 **Iterative Refinement**: Multi-turn content improvement workflow
@@ -21,11 +21,12 @@ Before you begin, ensure you have:
 
 ### Zero Setup Required
 
-This demo uses Transformers.js for completely local AI inference:
+This demo uses WebLLM for completely local AI inference:
 - ✅ No external services or APIs required
 - ✅ No model installation needed
 - ✅ Works completely offline after first model download
 - ✅ Models download automatically on first use
+- ✅ Multiple model options: Llama 3.2 1B/3B, Gemma 2B
 
 ## Quick Start
 
@@ -54,10 +55,16 @@ This demo uses Transformers.js for completely local AI inference:
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `NEXT_PUBLIC_AI_MODEL` | Transformers.js model | `Xenova/distilgpt2` | No |
+| `NEXT_PUBLIC_AI_MODEL` | WebLLM model ID | `Llama-3.2-1B-Instruct-q4f32_1-MLC` | No |
 | `NEXT_PUBLIC_BILAN_ENDPOINT` | Bilan server URL | - | **Conditional*** |
 | `NEXT_PUBLIC_BILAN_MODE` | Bilan mode | `local` | No |
 | `NEXT_PUBLIC_DEBUG` | Enable debug logging | `false` | No |
+
+### Available Models
+
+- `Llama-3.2-1B-Instruct-q4f32_1-MLC` - Fast, lightweight (1.2GB)
+- `Llama-3.2-3B-Instruct-q4f32_1-MLC` - Balanced quality (2.4GB)
+- `gemma-2-2b-it-q4f32_1-MLC` - Creative content (1.8GB)
 
 ***BILAN_ENDPOINT Requirements:**
 - **Required when `BILAN_MODE="server"`** - Application will throw startup error if missing
@@ -76,7 +83,7 @@ The application will throw explicit errors in these cases:
 
 1. **Select Content Type**: Choose from Blog Post, Email, or Social Media
 2. **Provide Brief**: Describe what you want to create
-3. **Generate Content**: AI creates initial draft
+3. **Generate Content**: AI creates initial draft using WebLLM
 4. **Provide Feedback**: Accept, reject, or request refinements
 5. **Iterate**: Refine until satisfied
 6. **View Analytics**: Check Bilan dashboard for interaction insights

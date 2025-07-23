@@ -55,7 +55,7 @@ Thumbs.db
 *.swo
 *~
 
-# Transformers.js model cache
+# WebLLM model cache
 .cache/
 
 # Analytics data cache
