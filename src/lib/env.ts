@@ -41,10 +41,6 @@ export function getEnvironmentConfig(): EnvironmentConfig {
   }
   
   // Validate required variables
-  if (!config.AI_MODEL) {
-    throw new Error('AI_MODEL environment variable is required')
-  }
-  
   if (config.BILAN_MODE === 'server' && !config.BILAN_ENDPOINT) {
     throw new Error('BILAN_ENDPOINT is required when BILAN_MODE is "server"')
   }
