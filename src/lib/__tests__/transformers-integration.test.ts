@@ -9,6 +9,7 @@ import { AIClient } from '../ai-client'
 import { ContentGenerationService } from '../content-generation'
 import { PromptEngineer } from '../prompts'
 import { AIErrorHandler, AIErrorType } from '../ai-error-handling'
+import { createSessionId, createIterationId } from '../../types'
 
 // Mock transformers module
 vi.mock('@xenova/transformers', () => ({
@@ -113,8 +114,8 @@ describe('ContentGenerationService', () => {
     const request = {
       contentType: 'blog' as const,
       userBrief: 'AI development best practices',
-      sessionId: 'session_123' as any,
-      iterationId: 'iter_456' as any
+      sessionId: createSessionId('session_123'),
+      iterationId: createIterationId('iter_456')
     }
 
     // Configure mock behavior
@@ -154,8 +155,8 @@ describe('ContentGenerationService', () => {
     const request = {
       contentType: 'email' as const,
       userBrief: 'Follow-up email',
-      sessionId: 'session_789' as any,
-      iterationId: 'iter_101' as any
+      sessionId: createSessionId('session_789'),
+      iterationId: createIterationId('iter_101')
     }
 
     // Configure mock behavior for multiple calls
