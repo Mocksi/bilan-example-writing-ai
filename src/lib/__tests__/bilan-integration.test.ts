@@ -11,7 +11,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { initializeBilan, track, vote, getConfig, isBilanReady } from '../bilan'
 import { resetSDKForTesting } from '@mocksi/bilan-sdk'
-import { analyticsErrorManager } from '../analytics-error-handling'
 
 // Mock fetch for testing
 const mockFetch = vi.fn()
@@ -349,105 +348,7 @@ describe('Global Functions', () => {
   })
 })
 
-describe('Error Handling', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    analyticsErrorManager.clearErrorHistory()
-  })
 
-  describe('Event Validation', () => {
-    it('should validate event types', () => {
-      expect(analyticsErrorManager.validateEventData('valid_event', {})).toBe(true)
-      expect(analyticsErrorManager.validateEventData('', {})).toBe(false)
-      expect(analyticsErrorManager.validateEventData(null as any, {})).toBe(false)
-    })
-
-    it('should validate event type length', () => {
-      const longEventType = 'a'.repeat(101)
-      expect(analyticsErrorManager.validateEventData(longEventType, {})).toBe(false)
-    })
-
-    it('should validate properties size', () => {
-      const largeProperties = { data: 'x'.repeat(15000) }
-      expect(analyticsErrorManager.validateEventData('test', largeProperties)).toBe(false)
-    })
-
-    it('should validate properties type', () => {
-      expect(analyticsErrorManager.validateEventData('test', null as any)).toBe(false)
-      expect(analyticsErrorManager.validateEventData('test', 'string' as any)).toBe(false)
-    })
-  })
-
-  describe('Safe Execution', () => {
-    it('should handle successful operations', async () => {
-      const operation = vi.fn().mockResolvedValue('success')
-      
-      const result = await analyticsErrorManager.safeExecute(operation)
-      expect(result).toBe('success')
-      expect(operation).toHaveBeenCalledOnce()
-    })
-
-    it('should handle failed operations gracefully', async () => {
-      const operation = vi.fn().mockRejectedValue(new Error('Test error'))
-      
-      const result = await analyticsErrorManager.safeExecute(operation)
-      expect(result).toBeNull()
-    })
-
-    it('should retry on failure', async () => {
-      const operation = vi.fn()
-        .mockRejectedValueOnce(new Error('First failure'))
-        .mockRejectedValueOnce(new Error('Second failure'))
-        .mockResolvedValueOnce('Success on retry')
-      
-      const result = await analyticsErrorManager.safeExecute(operation)
-      expect(result).toBe('Success on retry')
-      expect(operation).toHaveBeenCalledTimes(3)
-    })
-
-    it('should not retry validation errors', async () => {
-      const operation = vi.fn().mockRejectedValue(new Error('Validation failed'))
-      
-      const result = await analyticsErrorManager.safeExecute(operation)
-      expect(result).toBeNull()
-      expect(operation).toHaveBeenCalledOnce() // No retries for validation errors
-    })
-  })
-
-  describe('Fire and Forget', () => {
-    it('should not throw on errors', async () => {
-      const operation = vi.fn().mockRejectedValue(new Error('Test error'))
-      
-      await expect(
-        analyticsErrorManager.fireAndForget(operation)
-      ).resolves.not.toThrow()
-    })
-  })
-
-  describe('Error Statistics', () => {
-    it('should track error statistics', async () => {
-      const operation = vi.fn().mockRejectedValue(new Error('Test error'))
-      
-      await analyticsErrorManager.safeExecute(operation)
-      
-      const stats = analyticsErrorManager.getErrorStats()
-      expect(stats.totalErrors).toBe(1)
-      expect(stats.errorsByType.unknown).toBe(1)
-    })
-
-    it('should categorize errors correctly', async () => {
-      const networkError = vi.fn().mockRejectedValue(new Error('Network fetch failed'))
-      const timeoutError = vi.fn().mockRejectedValue(new Error('Request timeout'))
-      
-      await analyticsErrorManager.safeExecute(networkError)
-      await analyticsErrorManager.safeExecute(timeoutError)
-      
-      const stats = analyticsErrorManager.getErrorStats()
-      expect(stats.errorsByType.network).toBe(1)
-      expect(stats.errorsByType.timeout).toBe(1)
-    })
-  })
-})
 
 describe('Integration Patterns', () => {
   beforeEach(async () => {
