@@ -42,7 +42,7 @@ yarn-error.log*
 next-env.d.ts
 
 # Template repository - ignore project docs
-/docs/projects
+/docs/projects/
 
 # OS files
 .DS_Store
