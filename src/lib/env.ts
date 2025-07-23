@@ -3,9 +3,8 @@
  */
 
 export interface EnvironmentConfig {
-  // Ollama configuration
-  OLLAMA_HOST: string
-  OLLAMA_MODEL: string
+  // AI configuration
+  AI_MODEL: string
   
   // Bilan configuration
   BILAN_ENDPOINT?: string
@@ -25,9 +24,8 @@ export interface EnvironmentConfig {
  */
 export function getEnvironmentConfig(): EnvironmentConfig {
   const config: EnvironmentConfig = {
-    // Ollama configuration
-    OLLAMA_HOST: process.env.OLLAMA_HOST || 'http://localhost:11434',
-    OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'tinyllama',
+    // AI configuration
+    AI_MODEL: process.env.NEXT_PUBLIC_AI_MODEL || 'Xenova/distilgpt2',
     
     // Bilan configuration
     BILAN_ENDPOINT: process.env.NEXT_PUBLIC_BILAN_ENDPOINT,
@@ -43,12 +41,8 @@ export function getEnvironmentConfig(): EnvironmentConfig {
   }
   
   // Validate required variables
-  if (!config.OLLAMA_HOST) {
-    throw new Error('OLLAMA_HOST environment variable is required')
-  }
-  
-  if (!config.OLLAMA_MODEL) {
-    throw new Error('OLLAMA_MODEL environment variable is required')
+  if (!config.AI_MODEL) {
+    throw new Error('AI_MODEL environment variable is required')
   }
   
   if (config.BILAN_MODE === 'server' && !config.BILAN_ENDPOINT) {
