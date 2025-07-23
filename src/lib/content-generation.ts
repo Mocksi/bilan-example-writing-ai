@@ -74,7 +74,11 @@ export interface ServiceHealthStatus {
  * Content generation service class
  */
 export class ContentGenerationService {
-  private aiClient = aiClient
+  private aiClient: typeof aiClient
+
+  constructor(aiClientInstance?: typeof aiClient) {
+    this.aiClient = aiClientInstance || aiClient
+  }
 
   /**
    * Generate content for a specific content type and user brief

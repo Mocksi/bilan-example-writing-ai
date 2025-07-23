@@ -59,27 +59,47 @@ describe('AIClient', () => {
   })
 
   it('should handle content type specific generation', async () => {
-    // Mock the pipeline to return a function that generates text
-    const mockPipeline = vi.fn().mockResolvedValue([{
-      generated_text: 'Write an engaging blog post about AI development:\n\nThis is a comprehensive blog post about AI development best practices.'
-    }])
+    // Mock the pipeline function that will be called during generation
+    // The mock should return a function that returns the expected format
+    const mockPipeline = vi.fn().mockImplementation((prompt: string) => {
+      return [{
+        generated_text: prompt + '\n\nThis is a comprehensive blog post about AI development best practices.'
+      }]
+    })
     
-    // Mock the transformers import
-    ;(aiClient as any).generator = mockPipeline
-    ;(aiClient as any).isInitialized = true
+    // Mock the transformers module
+    const mockTransformers = {
+      pipeline: vi.fn().mockResolvedValue(mockPipeline)
+    }
+    
+    // Create AIClient with injected mock transformers module
+    const testClient = new AIClient({}, mockTransformers)
 
-    const result = await aiClient.generateContentForType('blog', 'AI development')
+    // Initialize the client properly through its public API
+    await testClient.initialize()
+    
+    const result = await testClient.generateContentForType('blog', 'AI development')
     
     expect(result.text).toBeTruthy()
+    expect(result.text).toContain('comprehensive blog post')
     expect(result.metadata.model).toBe('Xenova/distilgpt2')
   })
 })
 
 describe('ContentGenerationService', () => {
   let service: ContentGenerationService
+  let mockAIClient: any
 
   beforeEach(() => {
-    service = new ContentGenerationService()
+    // Create mock AI client
+    mockAIClient = {
+      generateContentForType: vi.fn(),
+      getStatus: vi.fn(),
+      initialize: vi.fn()
+    }
+    
+    // Inject mock client through constructor
+    service = new ContentGenerationService(mockAIClient)
   })
 
   it('should process content generation requests', async () => {
@@ -90,26 +110,16 @@ describe('ContentGenerationService', () => {
       iterationId: 'iter_456' as any
     }
 
-    // Mock the AI client
-    const mockAIClient = {
-      generateContentForType: vi.fn().mockResolvedValue({
-        text: 'Generated blog content',
-        metadata: {
-          model: 'test-model',
-          generationTime: 1000,
-          inputLength: 20,
-          outputLength: 100
-        }
-      }),
-      getStatus: vi.fn().mockReturnValue({
-        isInitialized: true,
-        isLoading: false,
-        model: 'test-model'
-      })
-    }
-
-    // Replace the private aiClient with our mock
-    ;(service as any).aiClient = mockAIClient
+    // Configure mock behavior
+    mockAIClient.generateContentForType.mockResolvedValue({
+      text: 'Generated blog content',
+      metadata: {
+        model: 'test-model',
+        generationTime: 1000,
+        inputLength: 20,
+        outputLength: 100
+      }
+    })
 
     const result = await service.generateContent(request)
 
@@ -119,15 +129,12 @@ describe('ContentGenerationService', () => {
   })
 
   it('should handle service health checks', async () => {
-    const mockAIClient = {
-      getStatus: vi.fn().mockReturnValue({
-        isInitialized: true,
-        isLoading: false,
-        model: 'test-model'
-      })
-    }
-
-    ;(service as any).aiClient = mockAIClient
+    // Configure mock behavior
+    mockAIClient.getStatus.mockReturnValue({
+      isInitialized: true,
+      isLoading: false,
+      model: 'test-model'
+    })
 
     const health = await service.checkServiceHealth()
 
@@ -144,20 +151,16 @@ describe('ContentGenerationService', () => {
       iterationId: 'iter_101' as any
     }
 
-    const mockAIClient = {
-      generateContentForType: vi.fn()
-        .mockResolvedValueOnce({
-          text: 'Email variation 1',
-          metadata: { model: 'test', generationTime: 500, inputLength: 10, outputLength: 50 }
-        })
-        .mockResolvedValueOnce({
-          text: 'Email variation 2',
-          metadata: { model: 'test', generationTime: 600, inputLength: 10, outputLength: 55 }
-        }),
-      getStatus: vi.fn().mockReturnValue({ isInitialized: true, isLoading: false, model: 'test' })
-    }
-
-    ;(service as any).aiClient = mockAIClient
+    // Configure mock behavior for multiple calls
+    mockAIClient.generateContentForType
+      .mockResolvedValueOnce({
+        text: 'Email variation 1',
+        metadata: { model: 'test', generationTime: 500, inputLength: 10, outputLength: 50 }
+      })
+      .mockResolvedValueOnce({
+        text: 'Email variation 2',
+        metadata: { model: 'test', generationTime: 600, inputLength: 10, outputLength: 55 }
+      })
 
     const variations = await service.generateVariations(request, 2)
 

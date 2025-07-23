@@ -56,14 +56,16 @@ export class AIClient {
   private isLoading = false
   private config: Required<AIClientConfig>
   private initializationPromise: Promise<void> | null = null
+  private transformersModule: any = null
 
-  constructor(config: AIClientConfig = {}) {
+  constructor(config: AIClientConfig = {}, transformersModule?: any) {
     this.config = {
       model: config.model || 'Xenova/distilgpt2',
       maxLength: config.maxLength || 200,
       temperature: config.temperature || 0.7,
       device: config.device || 'cpu',
     }
+    this.transformersModule = transformersModule
   }
 
   /**
@@ -90,7 +92,7 @@ export class AIClient {
       
       // Dynamic import of transformers
       if (!transformers) {
-        transformers = await import('@xenova/transformers' as any)
+        transformers = this.transformersModule || await import('@xenova/transformers' as any)
       }
       
       // Create text generation pipeline
