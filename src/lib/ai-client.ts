@@ -110,7 +110,7 @@ export class AIClient {
       this.isLoading = true
       
       // Log model loading for debugging
-      console.warn('Loading AI model:', this.config.model)
+      console.info('Loading AI model:', this.config.model)
       
       // Dynamic import of transformers
       if (!transformers) {
@@ -125,7 +125,7 @@ export class AIClient {
       this.isInitialized = true
       this.isLoading = false
       
-              console.warn(`AI model loaded successfully: ${this.config.model}`)
+      console.info(`AI model loaded successfully: ${this.config.model}`)
     } catch (error) {
       this.isLoading = false
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'

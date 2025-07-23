@@ -73,7 +73,7 @@ export async function initializeBilan(userId: string): Promise<void> {
     await bilanInit(initConfig)
 
     if (debug) {
-      console.warn('Bilan SDK initialized successfully', { mode, endpoint })
+      console.info('Bilan SDK initialized successfully', { mode, endpoint })
     }
   } catch (error) {
     // Fire-and-forget: log error but don't throw
