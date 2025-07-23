@@ -9,7 +9,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { BilanClient, initBilan, getBilan, track, vote } from '../bilan'
+import { initializeBilan, track, vote, getConfig, isBilanReady } from '../bilan'
+import { resetSDKForTesting } from '@mocksi/bilan-sdk'
 import { analyticsErrorManager } from '../analytics-error-handling'
 
 // Mock fetch for testing
@@ -24,6 +25,119 @@ vi.mock('../env', () => ({
     DEBUG: true
   }
 }))
+
+describe('Bilan SDK Integration Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.clearAllTimers()
+    vi.useFakeTimers()
+    
+    // Reset SDK for each test
+    if (typeof resetSDKForTesting === 'function') {
+      resetSDKForTesting()
+    }
+    
+    // Reset module-level variables
+    ;(globalThis as any).__BILAN_TEST_RESET__ = true
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    ;(globalThis as any).__BILAN_TEST_RESET__ = false
+  })
+
+  describe('Privacy and Security', () => {
+    it('should not log sensitive userId in debug mode', async () => {
+      // Mock console.log to capture debug output
+      const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {})
+      
+      // Set debug environment variable
+      vi.stubEnv('NEXT_PUBLIC_DEBUG', 'true')
+      
+      try {
+        // Initialize Bilan with debug mode enabled
+        await initializeBilan('sensitive_user_123')
+        
+        // Verify console.log was called for debug output
+        expect(mockConsoleLog).toHaveBeenCalledWith(
+          'Bilan SDK initialized successfully',
+          expect.objectContaining({
+            mode: expect.any(String),
+            endpoint: expect.any(String)
+          })
+        )
+        
+        // Verify that NO debug log contains the sensitive userId
+        const debugCalls = mockConsoleLog.mock.calls
+        for (const call of debugCalls) {
+          const logMessage = JSON.stringify(call)
+          expect(logMessage).not.toContain('sensitive_user_123')
+          expect(logMessage).not.toContain('userId')
+        }
+        
+      } finally {
+        mockConsoleLog.mockRestore()
+        vi.unstubAllEnvs()
+      }
+    })
+
+    it('should not expose userId in error messages', async () => {
+      // Mock console.warn to capture error output
+      const mockConsoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      
+      // Force an initialization error by providing invalid config
+      vi.stubEnv('NEXT_PUBLIC_BILAN_MODE', 'invalid_mode')
+      
+      try {
+        await initializeBilan('sensitive_user_456')
+        
+        // Verify that error logs don't contain sensitive userId
+        const errorCalls = mockConsoleWarn.mock.calls
+        for (const call of errorCalls) {
+          const logMessage = JSON.stringify(call)
+          expect(logMessage).not.toContain('sensitive_user_456')
+        }
+        
+      } finally {
+        mockConsoleWarn.mockRestore()
+        vi.unstubAllEnvs()
+      }
+    })
+
+    it('should include only non-sensitive information in debug logs', async () => {
+      const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {})
+      
+      vi.stubEnv('NEXT_PUBLIC_DEBUG', 'true')
+      vi.stubEnv('NEXT_PUBLIC_BILAN_MODE', 'server')
+      vi.stubEnv('NEXT_PUBLIC_BILAN_ENDPOINT', 'https://api.example.com')
+      
+      try {
+        await initializeBilan('test_user')
+        
+        // Verify debug log contains only safe information
+        expect(mockConsoleLog).toHaveBeenCalledWith(
+          'Bilan SDK initialized successfully',
+          {
+            mode: 'server',
+            endpoint: 'https://api.example.com'
+          }
+        )
+        
+        // Verify it does NOT contain userId
+        expect(mockConsoleLog).not.toHaveBeenCalledWith(
+          'Bilan SDK initialized successfully',
+          expect.objectContaining({
+            userId: expect.anything()
+          })
+        )
+        
+      } finally {
+        mockConsoleLog.mockRestore()
+        vi.unstubAllEnvs()
+      }
+    })
+  })
+})
 
 describe('BilanClient', () => {
   let client: BilanClient
