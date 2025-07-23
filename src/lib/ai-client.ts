@@ -6,12 +6,10 @@
  */
 
 import type { ContentType } from '../types'
+import type { TransformersModule, TextGenerationPipeline } from '../types/transformers'
 
 // Dynamic import to avoid TypeScript issues
-let transformers: any = null
-
-// Type definitions for Transformers.js
-type Pipeline = any
+let transformers: TransformersModule | null = null
 
 export interface AIClientConfig {
   model?: string
@@ -50,21 +48,21 @@ export interface AIClientStatus {
  * AI client using Transformers.js for local inference
  */
 export class AIClient {
-  private generator: Pipeline | null = null
+  private generator: TextGenerationPipeline | null = null
   private isInitialized = false
   private isLoading = false
   private config: Required<AIClientConfig>
   private initializationPromise: Promise<void> | null = null
-  private transformersModule: any = null
+  private transformersModule: TransformersModule | null = null
 
-  constructor(config: AIClientConfig = {}, transformersModule?: any) {
+  constructor(config: AIClientConfig = {}, transformersModule?: TransformersModule) {
     this.config = {
       model: config.model || 'Xenova/distilgpt2',
       maxLength: config.maxLength || 200,
       temperature: config.temperature || 0.7,
       device: config.device || 'cpu',
     }
-    this.transformersModule = transformersModule
+    this.transformersModule = transformersModule || null
   }
 
   /**
@@ -91,7 +89,7 @@ export class AIClient {
       
       // Dynamic import of transformers
       if (!transformers) {
-        transformers = this.transformersModule || await import('@xenova/transformers' as any)
+        transformers = this.transformersModule || (await import('@xenova/transformers')) as TransformersModule
       }
       
       // Create text generation pipeline
