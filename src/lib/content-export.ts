@@ -124,6 +124,11 @@ export interface ArchiveBundle {
 }
 
 /**
+ * In-memory storage for server-side shared sessions
+ */
+const serverSharedSessions = new Map<string, ContentSession>()
+
+/**
  * Content Export Service Class
  */
 export class ContentExportService {
@@ -177,7 +182,7 @@ export class ContentExportService {
     }
 
     const filename = this.generateFilename(session, format, template)
-    const size = new Blob([content]).size
+    const size = Buffer.byteLength(content, 'utf8')
 
     const metadata: ExportMetadata = {
       exportedAt: Date.now(),
@@ -236,7 +241,7 @@ export class ContentExportService {
       content,
       filename,
       mimeType: 'application/json',
-      size: new Blob([content]).size,
+      size: Buffer.byteLength(content, 'utf8'),
       metadata: {
         exportedAt: Date.now(),
         exportFormat: options.format,
@@ -565,20 +570,33 @@ export class ContentExportService {
   ): Promise<string> {
     const rows: string[] = []
     
+    // CSV field escaping function (RFC 4180 compliant)
+    const escapeCSVField = (field: string | number): string => {
+      const str = String(field)
+      // Enclose in double quotes and escape internal quotes by doubling them
+      return `"${str.replace(/"/g, '""')}"`
+    }
+    
     // Header
-    rows.push('Attempt,Content,User Feedback Type,Rating,Refinement Request,Response Time')
+    rows.push([
+      'Attempt',
+      'Content', 
+      'User Feedback Type',
+      'Rating',
+      'Refinement Request',
+      'Response Time'
+    ].map(escapeCSVField).join(','))
     
     // Data rows
     for (const iteration of session.iterations) {
-      const content = `"${iteration.generatedContent.replace(/"/g, '""')}"`
-      const feedbackType = iteration.userFeedback?.type || ''
-      const rating = iteration.userFeedback?.rating || ''
-      const refinementRequest = iteration.userFeedback?.refinementRequest 
-        ? `"${iteration.userFeedback.refinementRequest.replace(/"/g, '""')}"` 
-        : ''
-      const responseTime = iteration.timing.responseTime - iteration.timing.requestTime
+      const attemptNumber = escapeCSVField(iteration.attemptNumber)
+      const content = escapeCSVField(iteration.generatedContent)
+      const feedbackType = escapeCSVField(iteration.userFeedback?.type || '')
+      const rating = escapeCSVField(iteration.userFeedback?.rating || '')
+      const refinementRequest = escapeCSVField(iteration.userFeedback?.refinementRequest || '')
+      const responseTime = escapeCSVField(iteration.timing.responseTime - iteration.timing.requestTime)
       
-      rows.push(`${iteration.attemptNumber},${content},${feedbackType},${rating},${refinementRequest},${responseTime}`)
+      rows.push(`${attemptNumber},${content},${feedbackType},${rating},${refinementRequest},${responseTime}`)
     }
     
     return rows.join('\n')
@@ -648,10 +666,18 @@ export class ContentExportService {
   }
 
   private storeSharedSession(shareCode: string, session: ContentSession): void {
-    // In a real application, this would store in a database
-    // For now, we'll use in-memory storage
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(`shared_${shareCode}`, JSON.stringify(session))
+    // Detect environment and use appropriate storage
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      // Browser environment - use localStorage
+      try {
+        localStorage.setItem(`shared_${shareCode}`, JSON.stringify(session))
+      } catch (error) {
+        console.warn('localStorage not available, falling back to in-memory storage')
+        serverSharedSessions.set(shareCode, session)
+      }
+    } else {
+      // Server environment - use in-memory Map
+      serverSharedSessions.set(shareCode, session)
     }
   }
 
@@ -707,13 +733,20 @@ export class ContentExportService {
    * Get shared session by code
    */
   getSharedSession(shareCode: string): ContentSession | null {
-    if (typeof localStorage === 'undefined') return null
-    
-    try {
-      const stored = localStorage.getItem(`shared_${shareCode}`)
-      return stored ? JSON.parse(stored) : null
-    } catch {
-      return null
+    // Detect environment and use appropriate storage
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      // Browser environment - try localStorage first
+      try {
+        const stored = localStorage.getItem(`shared_${shareCode}`)
+        return stored ? JSON.parse(stored) : null
+      } catch (error) {
+        console.warn('localStorage error, trying in-memory storage')
+        // Fall back to in-memory storage
+        return serverSharedSessions.get(shareCode) || null
+      }
+    } else {
+      // Server environment - use in-memory Map
+      return serverSharedSessions.get(shareCode) || null
     }
   }
 
