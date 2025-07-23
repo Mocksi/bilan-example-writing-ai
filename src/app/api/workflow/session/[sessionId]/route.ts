@@ -8,11 +8,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { 
   getContentSession, 
   updateContentSession, 
-  completeContentSession,
   getContentSessionStats
 } from '../../../../../lib/content-session-manager'
 import { analyzeSessionProgress } from '../../../../../lib/content-comparison'
-import { exportContentSession } from '../../../../../lib/content-export'
 import type { SessionStatus } from '../../../../../types'
 import { createSessionId } from '../../../../../types'
 
