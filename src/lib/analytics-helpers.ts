@@ -5,7 +5,7 @@
  * following standard analytics patterns for user funnel analysis
  */
 
-import { track, getBilan } from './bilan'
+import { track, getConfig } from './bilan'
 import type { 
   UserId, 
   SessionId, 
@@ -157,13 +157,27 @@ export class ConversationManager {
 }
 
 /**
- * Journey tracking utilities
+ * Journey tracking utilities with memory management
  */
 export class JourneyTracker {
   private userJourneys = new Map<UserId, JourneyStepMeta[]>()
+  private userLastAccess = new Map<UserId, number>()
+  
+  // Memory management configuration
+  private static readonly MAX_STEPS_PER_USER = 50 // Limit journey length per user
+  private static readonly MAX_USERS_TRACKED = 1000 // Maximum number of users to track
+  private static readonly MAX_JOURNEY_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
+  private static readonly CLEANUP_INTERVAL_MS = 60 * 60 * 1000 // Cleanup every hour
+  
+  private cleanupTimer: NodeJS.Timeout | null = null
+
+  constructor() {
+    // Start periodic cleanup
+    this.startPeriodicCleanup()
+  }
 
   /**
-   * Track a journey step with automatic sequencing
+   * Track a journey step with automatic sequencing and memory management
    */
   async trackStep(
     step: JourneyStep,
@@ -185,10 +199,20 @@ export class JourneyTracker {
       }
     }
 
-    // Add to user journey history
+    // Add to user journey history with memory management
     const userSteps = this.userJourneys.get(userId) || []
     userSteps.push(stepMeta)
+    
+    // Trim to maximum steps per user to prevent unbounded growth
+    if (userSteps.length > JourneyTracker.MAX_STEPS_PER_USER) {
+      userSteps.splice(0, userSteps.length - JourneyTracker.MAX_STEPS_PER_USER)
+    }
+    
     this.userJourneys.set(userId, userSteps)
+    this.userLastAccess.set(userId, Date.now())
+    
+    // Evict oldest users if we exceed the maximum user limit
+    this.evictOldestUsersIfNeeded()
 
     // Calculate step sequence and timing
     const stepSequence = userSteps.length
@@ -258,7 +282,12 @@ export class JourneyTracker {
    * Get user journey history
    */
   getUserJourney(userId: UserId): JourneyStepMeta[] {
-    return this.userJourneys.get(userId) || []
+    const journey = this.userJourneys.get(userId) || []
+    // Update last access time when journey is accessed
+    if (journey.length > 0) {
+      this.userLastAccess.set(userId, Date.now())
+    }
+    return journey
   }
 
   /**
@@ -266,6 +295,136 @@ export class JourneyTracker {
    */
   clearUserJourney(userId: UserId): void {
     this.userJourneys.delete(userId)
+    this.userLastAccess.delete(userId)
+  }
+
+  /**
+   * Evict oldest users when user limit is exceeded (LRU eviction)
+   */
+  private evictOldestUsersIfNeeded(): void {
+    if (this.userJourneys.size <= JourneyTracker.MAX_USERS_TRACKED) {
+      return
+    }
+
+    // Calculate how many users to evict (10% buffer to avoid frequent evictions)
+    const usersToEvict = Math.ceil(this.userJourneys.size * 0.1)
+    
+    // Get users sorted by last access time (oldest first)
+    const usersByAccess = Array.from(this.userLastAccess.entries())
+      .sort(([, aTime], [, bTime]) => aTime - bTime)
+      .slice(0, usersToEvict)
+
+    // Evict oldest users
+    for (const [userId] of usersByAccess) {
+      this.userJourneys.delete(userId)
+      this.userLastAccess.delete(userId)
+    }
+
+    // Log eviction for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`JourneyTracker: Evicted ${usersToEvict} oldest users (total: ${this.userJourneys.size})`)
+    }
+  }
+
+  /**
+   * Clean up old journeys based on time
+   */
+  private cleanupOldJourneys(): void {
+    const now = Date.now()
+    const cutoffTime = now - JourneyTracker.MAX_JOURNEY_AGE_MS
+    let cleanedCount = 0
+
+    for (const [userId, steps] of this.userJourneys.entries()) {
+      // Remove steps older than the cutoff time
+      const recentSteps = steps.filter(step => step.timestamp > cutoffTime)
+      
+      if (recentSteps.length === 0) {
+        // No recent steps, remove user entirely
+        this.userJourneys.delete(userId)
+        this.userLastAccess.delete(userId)
+        cleanedCount++
+      } else if (recentSteps.length !== steps.length) {
+        // Some steps were old, update with recent steps only
+        this.userJourneys.set(userId, recentSteps)
+      }
+    }
+
+    // Log cleanup for debugging
+    if (process.env.NODE_ENV === 'development' && cleanedCount > 0) {
+      console.log(`JourneyTracker: Cleaned up ${cleanedCount} old user journeys`)
+    }
+  }
+
+  /**
+   * Start periodic cleanup of old journeys
+   */
+  private startPeriodicCleanup(): void {
+    // Only run cleanup in environments that support timers
+    if (typeof setTimeout === 'undefined') {
+      return
+    }
+
+    this.cleanupTimer = setInterval(() => {
+      this.cleanupOldJourneys()
+    }, JourneyTracker.CLEANUP_INTERVAL_MS)
+  }
+
+  /**
+   * Stop periodic cleanup (for testing or cleanup)
+   */
+  stopPeriodicCleanup(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer)
+      this.cleanupTimer = null
+    }
+  }
+
+  /**
+   * Get memory usage statistics for monitoring
+   */
+  getMemoryStats(): {
+    totalUsers: number
+    totalSteps: number
+    averageStepsPerUser: number
+    oldestJourneyAge: number
+  } {
+    const totalUsers = this.userJourneys.size
+    let totalSteps = 0
+    let oldestTimestamp = Date.now()
+
+    for (const steps of this.userJourneys.values()) {
+      totalSteps += steps.length
+      if (steps.length > 0) {
+        const firstStep = steps[0]
+        if (firstStep.timestamp < oldestTimestamp) {
+          oldestTimestamp = firstStep.timestamp
+        }
+      }
+    }
+
+    return {
+      totalUsers,
+      totalSteps,
+      averageStepsPerUser: totalUsers > 0 ? Math.round(totalSteps / totalUsers) : 0,
+      oldestJourneyAge: Date.now() - oldestTimestamp
+    }
+  }
+
+  /**
+   * Manual cleanup method for testing or explicit cleanup
+   */
+  cleanup(): void {
+    this.cleanupOldJourneys()
+    this.evictOldestUsersIfNeeded()
+  }
+
+  /**
+   * Destroy the tracker and clean up resources
+   */
+  destroy(): void {
+    this.stopPeriodicCleanup()
+    this.userJourneys.clear()
+    this.userLastAccess.clear()
   }
 }
 
@@ -395,8 +554,10 @@ export const setupAbandonmentTracking = (): void => {
         }
 
         if (navigator.sendBeacon) {
+          const config = getConfig()
+          const endpoint = config?.endpoint || 'http://localhost:3002'
           navigator.sendBeacon(
-            `${getBilan().getConfig().endpoint}/api/events`,
+            `${endpoint}/api/events`,
             JSON.stringify(abandonmentData)
           )
         }
