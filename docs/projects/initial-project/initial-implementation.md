@@ -137,7 +137,7 @@ This document outlines the implementation strategy for the Bilan Content Creatio
 
 #### Commits:
 1. `feat: configure Bilan SDK initialization`
-   - Create lib/bilan.ts
+   - Create lib/bilan.ts -- we should be using the library from npm
    - Set up initialization with local mode
    - Add user session management
    - Configure privacy settings
@@ -151,15 +151,14 @@ This document outlines the implementation strategy for the Bilan Content Creatio
    - Conversation lifecycle management (start/end)
    - Journey step tracking for content creation workflow
    - Session correlation across all events
-   - Abandonment detection patterns
 
-4. `feat: create analytics event queue`
+4. `feat: create analytics event queue` -- I'm not sure we need this, we should treat Bilan as simply, as much like a firehose as possible
    - Local event storage with IndexedDB
    - Batch processing logic
    - Offline support with background sync
    - Event deduplication
 
-5. `feat: implement advanced Bilan patterns`
+5. `feat: implement advanced Bilan patterns` -- again this sounds like overbuidling
    - Multi-turn refinement tracking
    - Content type performance comparison
    - User preference learning signals

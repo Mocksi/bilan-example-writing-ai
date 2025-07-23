@@ -177,4 +177,67 @@ export interface UserJourney {
   startedAt: number
   completedAt?: number
   status: 'in_progress' | 'completed' | 'abandoned'
+}
+
+/**
+ * Type guard functions for runtime type validation
+ */
+export const isContentType = (value: any): value is ContentType => {
+  return typeof value === 'string' && ['blog', 'email', 'social'].includes(value)
+}
+
+export const isFeedbackType = (value: any): value is FeedbackType => {
+  return typeof value === 'string' && ['accept', 'reject', 'refine'].includes(value)
+}
+
+export const isAcceptanceLevel = (value: any): value is AcceptanceLevel => {
+  return typeof value === 'string' && ['as_is', 'light_edit', 'heavy_edit', 'inspiration'].includes(value)
+}
+
+export const isSessionStatus = (value: any): value is SessionStatus => {
+  return typeof value === 'string' && ['active', 'completed', 'abandoned'].includes(value)
+}
+
+export const isUserFeedback = (value: any): value is UserFeedback => {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    isFeedbackType(value.type) &&
+    (value.rating === undefined || value.rating === 1 || value.rating === -1) &&
+    (value.refinementRequest === undefined || typeof value.refinementRequest === 'string') &&
+    (value.quickFeedback === undefined || Array.isArray(value.quickFeedback)) &&
+    (value.acceptanceLevel === undefined || isAcceptanceLevel(value.acceptanceLevel))
+  )
+}
+
+export const isContentIteration = (value: any): value is ContentIteration => {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof value.id === 'string' &&
+    typeof value.attemptNumber === 'number' &&
+    typeof value.prompt === 'string' &&
+    typeof value.generatedContent === 'string' &&
+    typeof value.bilanTurnId === 'string' &&
+    (value.userFeedback === undefined || isUserFeedback(value.userFeedback)) &&
+    typeof value.timing === 'object' &&
+    typeof value.timing.requestTime === 'number' &&
+    typeof value.timing.responseTime === 'number' &&
+    (value.timing.userResponseTime === undefined || typeof value.timing.userResponseTime === 'number')
+  )
+}
+
+export const isContentSession = (value: any): value is ContentSession => {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof value.id === 'string' &&
+    isContentType(value.contentType) &&
+    typeof value.userBrief === 'string' &&
+    Array.isArray(value.iterations) &&
+    value.iterations.every(isContentIteration) &&
+    isSessionStatus(value.status) &&
+    typeof value.startTime === 'number' &&
+    (value.endTime === undefined || typeof value.endTime === 'number')
+  )
 } 
