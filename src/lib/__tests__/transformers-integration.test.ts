@@ -24,6 +24,8 @@ describe('AIClient', () => {
 
   beforeEach(() => {
     aiClient = new AIClient()
+    // Reset any global transformers state
+    vi.clearAllMocks()
   })
 
   it('should initialize with default configuration', () => {
@@ -40,17 +42,23 @@ describe('AIClient', () => {
   })
 
   it('should generate content with proper structure', async () => {
-    // Mock the generator method
-    const mockGenerator = vi.fn().mockResolvedValue([{
-      generated_text: 'Test input\n\nGenerated content here'
-    }])
+    // Mock the generator function
+    const mockGenerator = vi.fn().mockImplementation((prompt: string) => {
+      return [{
+        generated_text: prompt + '\n\nGenerated content here'
+      }]
+    })
     
-    // Mock the pipeline creation
-    vi.doMock('@xenova/transformers', () => ({
+    // Mock the transformers module
+    const mockTransformers = {
       pipeline: vi.fn().mockResolvedValue(mockGenerator)
-    }))
+    }
+    
+    // Create isolated client for this test
+    const testClient = new AIClient({}, mockTransformers)
+    await testClient.initialize()
 
-    const result = await aiClient.generateContent('Test input')
+    const result = await testClient.generateContent('Test input')
     
     expect(result).toHaveProperty('text')
     expect(result).toHaveProperty('metadata')
