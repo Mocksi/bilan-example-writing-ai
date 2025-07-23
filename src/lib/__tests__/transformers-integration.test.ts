@@ -59,13 +59,14 @@ describe('AIClient', () => {
   })
 
   it('should handle content type specific generation', async () => {
-    const mockGenerator = vi.fn().mockResolvedValue([{
-      generated_text: 'Blog prompt\n\nThis is a blog post'
+    // Mock the pipeline to return a function that generates text
+    const mockPipeline = vi.fn().mockResolvedValue([{
+      generated_text: 'Write an engaging blog post about AI development:\n\nThis is a comprehensive blog post about AI development best practices.'
     }])
     
-    vi.doMock('@xenova/transformers', () => ({
-      pipeline: vi.fn().mockResolvedValue(mockGenerator)
-    }))
+    // Mock the transformers import
+    ;(aiClient as any).generator = mockPipeline
+    ;(aiClient as any).isInitialized = true
 
     const result = await aiClient.generateContentForType('blog', 'AI development')
     
