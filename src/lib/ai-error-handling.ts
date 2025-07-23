@@ -21,7 +21,7 @@ export interface AIError {
   type: AIErrorType
   message: string
   originalError?: Error
-  context?: Record<string, any>
+  context?: Record<string, unknown>
   recoverable: boolean
   userMessage: string
   suggestedActions: string[]
@@ -46,7 +46,7 @@ export class AIErrorHandler {
   /**
    * Handle and classify AI-related errors
    */
-  handleError(error: Error, context?: Record<string, any>): AIError {
+  handleError(error: Error, context?: Record<string, unknown>): AIError {
     const aiError = this.classifyError(error, context)
     this.logError(aiError)
     return aiError
@@ -55,7 +55,7 @@ export class AIErrorHandler {
   /**
    * Classify error and determine recovery strategy
    */
-  private classifyError(error: Error, context?: Record<string, any>): AIError {
+  private classifyError(error: Error, context?: Record<string, unknown>): AIError {
     const message = error.message.toLowerCase()
     
     // Model loading errors
@@ -220,7 +220,7 @@ export class AIErrorHandler {
     type: AIErrorType,
     message: string,
     originalError: Error,
-    context?: Record<string, any>,
+    context?: Record<string, unknown>,
     recoverable: boolean = true,
     userMessage: string = '',
     suggestedActions: string[] = []
@@ -445,7 +445,7 @@ export const aiErrorHandler = new AIErrorHandler()
 /**
  * Convenience function to handle errors
  */
-export const handleAIError = (error: Error, context?: Record<string, any>): AIError =>
+export const handleAIError = (error: Error, context?: Record<string, unknown>): AIError =>
   aiErrorHandler.handleError(error, context)
 
 /**
