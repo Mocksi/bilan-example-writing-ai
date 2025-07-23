@@ -16,6 +16,7 @@ export interface AIClientConfig {
   maxLength?: number
   temperature?: number
   device?: 'cpu' | 'gpu'
+  padTokenId?: number
 }
 
 export interface GenerationOptions {
@@ -25,6 +26,7 @@ export interface GenerationOptions {
   topK?: number
   topP?: number
   repetitionPenalty?: number
+  padTokenId?: number
 }
 
 export interface GenerationResponse {
@@ -42,6 +44,7 @@ export interface AIClientStatus {
   isLoading: boolean
   model: string
   error?: string
+  config: Required<AIClientConfig>
 }
 
 /**
@@ -61,8 +64,29 @@ export class AIClient {
       maxLength: config.maxLength || 200,
       temperature: config.temperature || 0.7,
       device: config.device || 'cpu',
+      padTokenId: config.padTokenId || this.getDefaultPadTokenId(config.model || 'Xenova/distilgpt2'),
     }
     this.transformersModule = transformersModule || null
+  }
+
+  /**
+   * Get default pad token ID based on model type
+   * Different models use different pad token IDs
+   */
+  private getDefaultPadTokenId(model: string): number {
+    // Common pad token IDs for different model families
+    if (model.includes('gpt') || model.includes('distilgpt')) {
+      return 50256 // GPT-2/DistilGPT-2 pad token
+    } else if (model.includes('bert')) {
+      return 0 // BERT pad token
+    } else if (model.includes('t5')) {
+      return 0 // T5 pad token
+    } else if (model.includes('llama')) {
+      return 0 // LLaMA pad token
+    } else {
+      // Default fallback - GPT-2 style
+      return 50256
+    }
   }
 
   /**
@@ -133,7 +157,7 @@ export class AIClient {
         top_k: options.topK ?? 50,
         top_p: options.topP ?? 0.9,
         repetition_penalty: options.repetitionPenalty ?? 1.1,
-        pad_token_id: 50256, // GPT-2 pad token
+        pad_token_id: options.padTokenId ?? this.config.padTokenId,
       }
 
       const result = await this.generator(prompt, generationOptions)
@@ -187,6 +211,7 @@ export class AIClient {
       isInitialized: this.isInitialized,
       isLoading: this.isLoading,
       model: this.config.model,
+      config: this.config,
     }
   }
 

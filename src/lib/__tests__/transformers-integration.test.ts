@@ -42,6 +42,23 @@ describe('AIClient', () => {
     expect(status.model).toBe('test-model')
   })
 
+  it('should use configurable pad token ID based on model type', () => {
+    // Test GPT-2 model gets correct pad token ID
+    const gptClient = new AIClient({ model: 'Xenova/distilgpt2' })
+    const gptStatus = gptClient.getStatus()
+    expect(gptStatus.config.padTokenId).toBe(50256)
+
+    // Test BERT model gets correct pad token ID
+    const bertClient = new AIClient({ model: 'Xenova/bert-base-uncased' })
+    const bertStatus = bertClient.getStatus()
+    expect(bertStatus.config.padTokenId).toBe(0)
+
+    // Test custom pad token ID override
+    const customClient = new AIClient({ model: 'some-model', padTokenId: 12345 })
+    const customStatus = customClient.getStatus()
+    expect(customStatus.config.padTokenId).toBe(12345)
+  })
+
   it('should generate content with proper structure', async () => {
     // Mock the generator function
     const mockGenerator = vi.fn().mockImplementation((prompt: string) => {
