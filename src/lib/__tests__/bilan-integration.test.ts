@@ -10,6 +10,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { initializeBilan, track, vote, getConfig, isBilanReady, startConversation } from '../bilan'
+import type { TurnId, UserId } from '../../types'
 
 // Mock fetch for testing
 const mockFetch = vi.fn()
@@ -97,7 +98,7 @@ describe('Bilan SDK Integration', () => {
     })
 
     it('should track votes with turn correlation', async () => {
-      const turnId = 'turn_123'
+      const turnId = 'turn_123' as TurnId
       const rating = 1
       const comment = 'Great content!'
 
@@ -105,10 +106,22 @@ describe('Bilan SDK Integration', () => {
     })
 
     it('should handle votes without comments', async () => {
-      const turnId = 'turn_456'
+      const turnId = 'turn_456' as TurnId
       const rating = -1
 
       await expect(vote(turnId, rating)).resolves.not.toThrow()
+    })
+
+    it('should validate rating values', async () => {
+      const turnId = 'turn_123' as TurnId
+      
+      // Valid ratings
+      await expect(vote(turnId, 1)).resolves.not.toThrow()
+      await expect(vote(turnId, -1)).resolves.not.toThrow()
+      
+      // Invalid ratings should be handled gracefully
+      await expect(vote(turnId, 0 as any)).resolves.not.toThrow()
+      await expect(vote(turnId, 2 as any)).resolves.not.toThrow()
     })
   })
 
@@ -143,24 +156,24 @@ describe('Bilan SDK Integration', () => {
         success: true
       })
       
-      // Track user feedback
-      await vote('turn_789', 1, 'Perfect for my needs')
-      
-      // All should complete without errors
-      expect(true).toBe(true)
-    })
+             // Track user feedback
+       await vote('turn_789' as TurnId, 1, 'Perfect for my needs')
+       
+       // All should complete without errors
+       expect(true).toBe(true)
+     })
 
-    it('should track user refinement cycle', async () => {
-      // Initial generation
-      await track('content_generated', { iteration: 1 })
-      await vote('turn_001', -1, 'Too generic')
-      
-      // Refinement
-      await track('content_refined', { iteration: 2 })
-      await vote('turn_002', 1, 'Much better!')
-      
-      // Final acceptance  
-      await track('content_accepted', { finalIteration: 2 })
+     it('should track user refinement cycle', async () => {
+       // Initial generation
+       await track('content_generated', { iteration: 1 })
+       await vote('turn_001' as TurnId, -1, 'Too generic')
+       
+       // Refinement
+       await track('content_refined', { iteration: 2 })
+       await vote('turn_002' as TurnId, 1, 'Much better!')
+       
+       // Final acceptance  
+       await track('content_accepted', { finalIteration: 2 })
       
       expect(true).toBe(true)
     })

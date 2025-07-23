@@ -41,7 +41,13 @@ export function getEnvironmentConfig(): EnvironmentConfig {
     
     // Bilan configuration
     BILAN_ENDPOINT: getEnvVar('NEXT_PUBLIC_BILAN_ENDPOINT'),
-    BILAN_MODE: (getEnvVar('NEXT_PUBLIC_BILAN_MODE', 'local') as 'local' | 'server'),
+    BILAN_MODE: (() => {
+      const mode = getEnvVar('NEXT_PUBLIC_BILAN_MODE', 'local');
+      if (mode !== 'local' && mode !== 'server') {
+        throw new Error(`Invalid BILAN_MODE: ${mode}. Must be 'local' or 'server'`);
+      }
+      return mode as 'local' | 'server';
+    })(),
     
     // Development flags
     DEBUG: getEnvVar('NEXT_PUBLIC_DEBUG', 'false') === 'true',
