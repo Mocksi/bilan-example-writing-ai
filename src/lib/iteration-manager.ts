@@ -584,11 +584,14 @@ export class IterationManager {
    * Clear session data
    */
   clearSession(sessionId: SessionId): void {
+    // First retrieve the history before deleting it
+    const history = this.iterationHistory.get(sessionId) || []
+    
+    // Delete the main session data
     this.iterationHistory.delete(sessionId)
     this.versionTrees.delete(sessionId)
     
-    // Clean up metrics for this session
-    const history = this.iterationHistory.get(sessionId) || []
+    // Clean up metrics for this session using the retrieved history
     for (const iteration of history) {
       this.iterationMetrics.delete(iteration.id)
     }
