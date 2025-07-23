@@ -20,24 +20,36 @@ export interface EnvironmentConfig {
 }
 
 /**
+ * Get environment variable with default value
+ */
+export function getEnvVar(key: string, defaultValue: string = ''): string {
+  if (typeof window !== 'undefined') {
+    // Client-side: access from window if available, fallback to build-time values
+    return (window as any).__ENV__?.[key] || process.env[key] || defaultValue
+  }
+  // Server-side: access from process.env
+  return process.env[key] || defaultValue
+}
+
+/**
  * Parse and validate environment variables
  */
 export function getEnvironmentConfig(): EnvironmentConfig {
   const config: EnvironmentConfig = {
     // AI configuration
-    AI_MODEL: process.env.NEXT_PUBLIC_AI_MODEL || 'Xenova/distilgpt2',
+    AI_MODEL: getEnvVar('NEXT_PUBLIC_AI_MODEL', 'Xenova/distilgpt2'),
     
     // Bilan configuration
-    BILAN_ENDPOINT: process.env.NEXT_PUBLIC_BILAN_ENDPOINT,
-    BILAN_MODE: (process.env.NEXT_PUBLIC_BILAN_MODE as 'local' | 'server') || 'local',
+    BILAN_ENDPOINT: getEnvVar('NEXT_PUBLIC_BILAN_ENDPOINT'),
+    BILAN_MODE: (getEnvVar('NEXT_PUBLIC_BILAN_MODE', 'local') as 'local' | 'server'),
     
     // Development flags
-    DEBUG: process.env.NEXT_PUBLIC_DEBUG === 'true',
-    SHOW_USER_STATUS: process.env.NEXT_PUBLIC_SHOW_USER_STATUS === 'true',
+    DEBUG: getEnvVar('NEXT_PUBLIC_DEBUG', 'false') === 'true',
+    SHOW_USER_STATUS: getEnvVar('NEXT_PUBLIC_SHOW_USER_STATUS', 'false') === 'true',
     
     // Application configuration
-    APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'Bilan Content Creation Demo',
-    APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
+    APP_NAME: getEnvVar('NEXT_PUBLIC_APP_NAME', 'Bilan Content Creation Demo'),
+    APP_VERSION: getEnvVar('NEXT_PUBLIC_APP_VERSION', '1.0.0'),
   }
   
   // Validate required variables

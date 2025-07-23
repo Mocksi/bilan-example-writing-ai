@@ -1,316 +1,218 @@
 /**
  * Bilan SDK Integration
  * 
- * Simple analytics client for sending events to Bilan server
- * Follows standard analytics patterns like Amplitude/Mixpanel
+ * Provides analytics tracking for AI interactions following a simple fire-and-forget pattern.
+ * Similar to Amplitude or Mixpanel, but specialized for AI trust metrics.
  * 
- * NOTE: This is a mock implementation. Replace with actual @bilan/sdk when available.
+ * Key principles:
+ * - Fire-and-forget: Never throws errors that break the app
+ * - Non-blocking: Analytics failures don't affect user experience
+ * - Simple API: Standard patterns developers recognize
  */
 
-import { env } from './env'
-import { analyticsErrorManager, withErrorHandling } from './analytics-error-handling'
-import type { 
-  UserId, 
-  SessionId, 
-  TurnId, 
-  ConversationId,
-  BilanEventMetadata 
-} from '../types'
+import { 
+  init as bilanInit, 
+  trackTurn as bilanTrackTurn,
+  vote as bilanVote,
+  track as bilanTrack,
+  startConversation as bilanStartConversation,
+  endConversation as bilanEndConversation,
+  trackJourneyStep as bilanTrackJourneyStep,
+  isReady,
+  createUserId,
+  createConversationId,
+  type InitConfig,
+  type TurnContext,
+  type UserId,
+  type ConversationId
+} from '@mocksi/bilan-sdk'
 
+import { getEnvVar } from './env'
+
+// Bilan configuration interface
 export interface BilanConfig {
-  endpoint?: string
   mode: 'local' | 'server'
+  userId: string
+  endpoint?: string
   debug?: boolean
-  userId?: UserId
 }
 
-export interface BilanEvent {
-  eventType: string
-  timestamp: number
-  userId?: UserId
-  sessionId?: SessionId
-  turnId?: TurnId
-  conversationId?: ConversationId
-  properties: Record<string, any>
+// Global configuration
+let bilanConfig: BilanConfig | null = null
+let currentUserId: UserId | null = null
+
+/**
+ * Initialize Bilan SDK
+ * Fire-and-forget pattern: failures are logged but never thrown
+ */
+export async function initializeBilan(userId: string): Promise<void> {
+  try {
+    // Create configuration
+    const mode = getEnvVar('NEXT_PUBLIC_BILAN_MODE', 'local') as 'local' | 'server'
+    const endpoint = getEnvVar('NEXT_PUBLIC_BILAN_ENDPOINT', 'http://localhost:3002')
+    const debug = getEnvVar('NEXT_PUBLIC_DEBUG', 'false') === 'true'
+
+    bilanConfig = {
+      mode,
+      userId,
+      endpoint: mode === 'server' ? endpoint : undefined,
+      debug
+    }
+
+    currentUserId = createUserId(userId)
+
+    // Initialize the actual Bilan SDK
+    const initConfig: InitConfig = {
+      mode,
+      userId: currentUserId,
+      endpoint: bilanConfig.endpoint,
+      debug
+    }
+
+    await bilanInit(initConfig)
+
+    if (debug) {
+      console.log('Bilan SDK initialized successfully', { mode, userId, endpoint })
+    }
+  } catch (error) {
+    // Fire-and-forget: log error but don't throw
+    console.warn('Bilan initialization failed:', error)
+  }
 }
 
 /**
- * Mock Bilan client that mimics standard analytics SDKs
+ * Track an AI turn with automatic failure detection
+ * Returns both the AI result and turnId for correlation with votes
  */
-class BilanClient {
-  private config: Required<BilanConfig>
-  private currentUserId?: UserId
-  private currentSessionId?: SessionId
-  private currentConversationId?: ConversationId
-  private isInitialized = false
-
-  constructor(config: BilanConfig) {
-    this.config = {
-      endpoint: config.endpoint || env.BILAN_ENDPOINT || 'http://localhost:3002',
-      mode: config.mode,
-      debug: config.debug ?? env.DEBUG,
-      userId: config.userId || this.generateUserId()
+export async function trackTurn<T>(
+  prompt: string,
+  aiFunction: () => Promise<T>,
+  context?: TurnContext
+): Promise<{ result: T; turnId: string }> {
+  try {
+    if (!isReady()) {
+      // Graceful degradation - execute AI function without tracking
+      const result = await aiFunction()
+      return { result, turnId: '' }
     }
-  }
 
-  /**
-   * Initialize the Bilan client (like amplitude.init())
-   */
-  async init(): Promise<void> {
+    const response = await bilanTrackTurn(prompt, aiFunction, context)
+    return response
+  } catch (error) {
+    // Fire-and-forget: log error but still execute AI function
+    console.warn('Bilan turn tracking failed:', error)
     try {
-      this.currentUserId = this.config.userId
-      
-      if (this.config.mode === 'server' && !this.config.endpoint) {
-        throw new Error('Bilan endpoint required for server mode')
-      }
-
-      this.isInitialized = true
-      
-      if (this.config.debug) {
-        console.log('Bilan SDK initialized:', {
-          mode: this.config.mode,
-          endpoint: this.config.endpoint,
-          userId: this.currentUserId
-        })
-      }
-
-      // Send initialization event
-      await this.track('sdk_initialized', {
-        mode: this.config.mode,
-        version: '1.0.0'
-      })
-
-    } catch (error) {
-      console.error('Bilan initialization failed:', error)
-      // Don't throw - analytics should never break the app
+      const result = await aiFunction()
+      return { result, turnId: '' }
+    } catch (aiError) {
+      // Re-throw AI errors since they're not related to analytics
+      throw aiError
     }
   }
-
-  /**
-   * Identify user (like mixpanel.identify())
-   */
-  identify(userId: UserId): void {
-    this.currentUserId = userId
-    
-    if (this.config.debug) {
-      console.log('Bilan user identified:', userId)
-    }
-
-    // Fire-and-forget identify event
-    this.track('user_identified', { userId }).catch(() => {
-      // Silently handle errors - analytics should never break the app
-    })
-  }
-
-  /**
-   * Start a conversation session
-   */
-  startConversation(userId?: UserId): ConversationId {
-    if (userId) {
-      this.identify(userId)
-    }
-
-    this.currentConversationId = this.generateConversationId()
-    
-    if (this.config.debug) {
-      console.log('Conversation started:', this.currentConversationId)
-    }
-
-    // Fire-and-forget conversation start event
-    this.track('conversation_started', {
-      conversationId: this.currentConversationId
-    }).catch(() => {
-      // Silently handle errors
-    })
-
-    return this.currentConversationId
-  }
-
-  /**
-   * Track an event (like amplitude.track())
-   */
-  async track(
-    eventType: string, 
-    properties: Record<string, any> = {}
-  ): Promise<void> {
-    if (!this.isInitialized) {
-      if (this.config.debug) {
-        console.warn('Bilan not initialized, skipping event:', eventType)
-      }
-      return
-    }
-
-    // Validate event data
-    if (!analyticsErrorManager.validateEventData(eventType, properties)) {
-      return
-    }
-
-    const event: BilanEvent = {
-      eventType,
-      timestamp: Date.now(),
-      userId: this.currentUserId,
-      sessionId: this.currentSessionId,
-      turnId: properties.turnId,
-      conversationId: this.currentConversationId,
-      properties: {
-        ...properties,
-        // Remove IDs from properties to avoid duplication
-        turnId: undefined,
-        userId: undefined,
-        sessionId: undefined,
-        conversationId: undefined
-      }
-    }
-
-    // Clean undefined values
-    Object.keys(event.properties).forEach(key => {
-      if (event.properties[key] === undefined) {
-        delete event.properties[key]
-      }
-    })
-
-    // Send event with error handling and retry
-    await analyticsErrorManager.fireAndForget(
-      () => this.sendEvent(event),
-      { eventType, userId: this.currentUserId }
-    )
-
-    if (this.config.debug) {
-      console.log('Bilan event queued:', event)
-    }
-  }
-
-  /**
-   * Track a vote/feedback event with turn correlation
-   */
-  async vote(
-    turnId: TurnId, 
-    rating: 1 | -1, 
-    comment?: string
-  ): Promise<void> {
-    // Vote is critical for analytics - use fire-and-forget pattern
-    await analyticsErrorManager.fireAndForget(
-      () => this.track('user_vote', {
-        turnId,
-        rating,
-        comment,
-        timestamp: Date.now()
-      }),
-      { action: 'vote', turnId, rating }
-    )
-  }
-
-  /**
-   * Set current session ID
-   */
-  setSessionId(sessionId: SessionId): void {
-    this.currentSessionId = sessionId
-    
-    if (this.config.debug) {
-      console.log('Bilan session set:', sessionId)
-    }
-  }
-
-  /**
-   * Get current configuration
-   */
-  getConfig(): BilanConfig {
-    return { ...this.config }
-  }
-
-  /**
-   * Check if client is initialized
-   */
-  isReady(): boolean {
-    return this.isInitialized
-  }
-
-  /**
-   * Send event to Bilan server (fire-and-forget)
-   */
-  private async sendEvent(event: BilanEvent): Promise<void> {
-    if (this.config.mode === 'local') {
-      // In local mode, just log the event
-      if (this.config.debug) {
-        console.log('Bilan (local mode):', event)
-      }
-      return
-    }
-
-    // Send to server
-    const response = await fetch(`${this.config.endpoint}/api/events`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(event),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Bilan server error: ${response.status}`)
-    }
-  }
-
-  /**
-   * Generate a unique user ID
-   */
-  private generateUserId(): UserId {
-    return `user_${Date.now()}_${Math.random().toString(36).slice(2, 11)}` as UserId
-  }
-
-  /**
-   * Generate a unique conversation ID
-   */
-  private generateConversationId(): ConversationId {
-    return `conv_${Date.now()}_${Math.random().toString(36).slice(2, 11)}` as ConversationId
-  }
-}
-
-// Global instance (like window.amplitude)
-let bilanInstance: BilanClient | null = null
-
-/**
- * Initialize Bilan SDK (like amplitude.init())
- */
-export const initBilan = async (config: BilanConfig): Promise<BilanClient> => {
-  bilanInstance = new BilanClient(config)
-  await bilanInstance.init()
-  return bilanInstance
 }
 
 /**
- * Get the current Bilan instance
+ * Record user vote on AI response
+ * Fire-and-forget: never throws errors
  */
-export const getBilan = (): BilanClient => {
-  if (!bilanInstance) {
-    throw new Error('Bilan not initialized. Call initBilan() first.')
+export async function vote(turnId: string, rating: 1 | -1, comment?: string): Promise<void> {
+  try {
+    if (!isReady() || !turnId) {
+      return
+    }
+
+    await bilanVote(turnId, rating, comment)
+  } catch (error) {
+    // Fire-and-forget: log error but don't throw
+    console.warn('Bilan vote tracking failed:', error)
   }
-  return bilanInstance
 }
 
 /**
- * Convenience functions (like amplitude.track(), mixpanel.track())
+ * Track custom events (fire-and-forget)
  */
-export const track = (eventType: string, properties?: Record<string, any>) => {
-  return getBilan().track(eventType, properties)
+export async function track(
+  eventType: string,
+  properties?: Record<string, any>,
+  content?: { promptText?: string; aiResponse?: string; context?: string }
+): Promise<void> {
+  try {
+    if (!isReady()) {
+      return
+    }
+
+    await bilanTrack(eventType, properties, content)
+  } catch (error) {
+    console.warn('Bilan event tracking failed:', error)
+  }
 }
 
-export const vote = (turnId: TurnId, rating: 1 | -1, comment?: string) => {
-  return getBilan().vote(turnId, rating, comment)
+/**
+ * Start a conversation session
+ */
+export async function startConversation(): Promise<string> {
+  try {
+    if (!isReady() || !currentUserId) {
+      return ''
+    }
+
+    return await bilanStartConversation(currentUserId)
+  } catch (error) {
+    console.warn('Bilan conversation start failed:', error)
+    return ''
+  }
 }
 
-export const identify = (userId: UserId) => {
-  return getBilan().identify(userId)
+/**
+ * End a conversation session
+ */
+export async function endConversation(
+  conversationId: string, 
+  status: 'completed' | 'abandoned' = 'completed'
+): Promise<void> {
+  try {
+    if (!isReady() || !conversationId) {
+      return
+    }
+
+    await bilanEndConversation(conversationId, status)
+  } catch (error) {
+    console.warn('Bilan conversation end failed:', error)
+  }
 }
 
-export const startConversation = (userId?: UserId) => {
-  return getBilan().startConversation(userId)
+/**
+ * Track journey progression
+ */
+export async function trackJourneyStep(
+  journeyName: string, 
+  stepName: string
+): Promise<void> {
+  try {
+    if (!isReady() || !currentUserId) {
+      return
+    }
+
+    await bilanTrackJourneyStep(journeyName, stepName, currentUserId)
+  } catch (error) {
+    console.warn('Bilan journey tracking failed:', error)
+  }
 }
 
-export const setSessionId = (sessionId: SessionId) => {
-  return getBilan().setSessionId(sessionId)
+/**
+ * Get current configuration (for debugging)
+ */
+export function getConfig(): BilanConfig | null {
+  return bilanConfig
 }
 
-// Export the client class for direct usage
-export { BilanClient }
-export default BilanClient 
+/**
+ * Check if Bilan is ready
+ */
+export function isBilanReady(): boolean {
+  return isReady()
+}
+
+// Re-export types for use in components
+export type { TurnContext, UserId, ConversationId }
+export { createUserId, createConversationId } 
