@@ -27,7 +27,7 @@ vi.mock('../env', () => ({
     return mockValues[key] || defaultValue || ''
   }),
   env: {
-    AI_MODEL: 'Xenova/distilgpt2',
+    AI_MODEL: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
     BILAN_ENDPOINT: 'http://localhost:3002',
     BILAN_MODE: 'local' as const,
     DEBUG: true,
@@ -39,143 +39,141 @@ vi.mock('../env', () => ({
 
 // Mock Bilan SDK
 vi.mock('@mocksi/bilan-sdk', () => ({
-  init: vi.fn().mockResolvedValue(undefined),
-  trackTurn: vi.fn().mockResolvedValue({ turnId: 'mock_turn_id' }),
-  vote: vi.fn().mockResolvedValue(undefined),
-  track: vi.fn().mockResolvedValue(undefined),
-  startConversation: vi.fn().mockReturnValue('mock_conversation_id'),
-  endConversation: vi.fn().mockResolvedValue(undefined),
-  trackJourneyStep: vi.fn().mockResolvedValue(undefined),
-  isReady: vi.fn().mockReturnValue(true),
-  createUserId: vi.fn().mockReturnValue('mock_user_id'),
-  createConversationId: vi.fn().mockReturnValue('mock_conversation_id'),
-  resetSDKForTesting: vi.fn()
+  init: vi.fn(),
+  trackTurn: vi.fn(),
+  vote: vi.fn(),
+  track: vi.fn(),
+  startConversation: vi.fn(),
+  endConversation: vi.fn(),
+  trackJourneyStep: vi.fn(),
+  isReady: vi.fn(() => true),
+  createUserId: vi.fn((id: string) => id),
+  createConversationId: vi.fn((id: string) => id),
 }))
 
 describe('Bilan SDK Integration', () => {
+  const testUserId = 'test-user-123'
+
   beforeEach(() => {
     vi.clearAllMocks()
-    mockFetch.mockReset()
+  })
+
+  afterEach(() => {
+    // Clean up any global state
   })
 
   describe('Initialization', () => {
-    it('should initialize successfully', async () => {
-      await expect(initializeBilan('test_user')).resolves.not.toThrow()
+    it('should initialize with local mode by default', async () => {
+      await initializeBilan(testUserId)
       
-      expect(isBilanReady()).toBe(true)
       const config = getConfig()
-      expect(config?.userId).toBe('test_user')
+      expect(config).toMatchObject({
+        mode: 'local',
+        userId: testUserId,
+        debug: true
+      })
     })
 
-    it('should handle initialization gracefully', async () => {
-      await expect(initializeBilan('test_user')).resolves.not.toThrow()
-      expect(isBilanReady()).toBe(true)
+    it('should handle initialization failures gracefully', async () => {
+      const { init } = await import('@mocksi/bilan-sdk')
+      vi.mocked(init).mockRejectedValueOnce(new Error('Network error'))
+
+      // Should not throw
+      await expect(initializeBilan(testUserId)).resolves.toBeUndefined()
     })
   })
 
   describe('Event Tracking', () => {
     beforeEach(async () => {
-      await initializeBilan('test_user')
+      await initializeBilan(testUserId)
     })
 
-    it('should track events with proper structure', async () => {
-      const eventType = 'content_generated'
-      const properties = { contentType: 'blog', success: true }
+    it('should track custom events', async () => {
+      const { track: bilanTrack } = await import('@mocksi/bilan-sdk')
+      
+      await track('content_generated', { 
+        contentType: 'blog',
+        model: 'Llama-3.2-1B-Instruct-q4f32_1-MLC'
+      })
 
-      await expect(track(eventType, properties)).resolves.not.toThrow()
-      expect(isBilanReady()).toBe(true)
+      expect(bilanTrack).toHaveBeenCalledWith(
+        'content_generated',
+        { contentType: 'blog', model: 'Llama-3.2-1B-Instruct-q4f32_1-MLC' },
+        undefined
+      )
     })
 
-    it('should handle empty properties', async () => {
-      await expect(track('user_action')).resolves.not.toThrow()
-      await expect(track('user_action', {})).resolves.not.toThrow()
+    it('should handle tracking failures gracefully', async () => {
+      const { track: bilanTrack } = await import('@mocksi/bilan-sdk')
+      vi.mocked(bilanTrack).mockRejectedValueOnce(new Error('Tracking failed'))
+
+      // Should not throw
+      await expect(track('test_event')).resolves.toBeUndefined()
     })
   })
 
   describe('Vote Tracking', () => {
     beforeEach(async () => {
-      await initializeBilan('test_user')
+      await initializeBilan(testUserId)
     })
 
-    it('should track votes with turn correlation', async () => {
-      const turnId = 'turn_123' as TurnId
-      const rating = 1
-      const comment = 'Great content!'
-
-      await expect(vote(turnId, rating, comment)).resolves.not.toThrow()
-    })
-
-    it('should handle votes without comments', async () => {
-      const turnId = 'turn_456' as TurnId
-      const rating = -1
-
-      await expect(vote(turnId, rating)).resolves.not.toThrow()
-    })
-
-    it('should validate rating values', async () => {
+    it('should record user votes with turn correlation', async () => {
+      const { vote: bilanVote } = await import('@mocksi/bilan-sdk')
       const turnId = 'turn_123' as TurnId
       
-      // Valid ratings
-      await expect(vote(turnId, 1)).resolves.not.toThrow()
-      await expect(vote(turnId, -1)).resolves.not.toThrow()
+      await vote(turnId, 1, 'Great response!')
+
+      expect(bilanVote).toHaveBeenCalledWith(turnId, 1, 'Great response!')
+    })
+
+    it('should handle empty turn ID gracefully', async () => {
+      const { vote: bilanVote } = await import('@mocksi/bilan-sdk')
       
-      // Invalid ratings should be handled gracefully
-      await expect(vote(turnId, 0 as any)).resolves.not.toThrow()
-      await expect(vote(turnId, 2 as any)).resolves.not.toThrow()
+      await vote('', 1)
+
+      expect(bilanVote).not.toHaveBeenCalled()
     })
   })
 
   describe('Conversation Management', () => {
     beforeEach(async () => {
-      await initializeBilan('test_user')
+      await initializeBilan(testUserId)
     })
 
     it('should start conversations', async () => {
+      const { startConversation: bilanStartConversation } = await import('@mocksi/bilan-sdk')
+      vi.mocked(bilanStartConversation).mockResolvedValueOnce('conversation_123')
+      
       const conversationId = await startConversation()
-      expect(conversationId).toBeDefined()
-      expect(typeof conversationId).toBe('string')
+
+      expect(conversationId).toBe('conversation_123')
+      expect(bilanStartConversation).toHaveBeenCalledWith(testUserId)
+    })
+
+    it('should handle conversation start failures', async () => {
+      const { startConversation: bilanStartConversation } = await import('@mocksi/bilan-sdk')
+      vi.mocked(bilanStartConversation).mockRejectedValueOnce(new Error('Start failed'))
+      
+      const conversationId = await startConversation()
+
+      expect(conversationId).toBe('')
     })
   })
 
-  describe('Content Creation Patterns', () => {
-    beforeEach(async () => {
-      await initializeBilan('content_user')
-    })
+  describe('Error Handling', () => {
+    it('should provide graceful degradation when SDK is not ready', async () => {
+      const { isReady } = await import('@mocksi/bilan-sdk')
+      // Set the mock to return false for this test
+      vi.mocked(isReady).mockReturnValue(false)
 
-    it('should track content generation workflow', async () => {
-      // Track content type selection
-      await track('content_type_selected', { 
-        contentType: 'blog',
-        userIntent: 'marketing'
-      })
+      await initializeBilan(testUserId)
       
-      // Track content generation
-      await track('content_generated', { 
-        contentType: 'blog',
-        wordCount: 500,
-        success: true
-      })
+      // Operations should still work without throwing
+      await track('test_event')
+      await vote('turn_123' as TurnId, 1)
       
-             // Track user feedback
-       await vote('turn_789' as TurnId, 1, 'Perfect for my needs')
-       
-       // All should complete without errors
-       expect(true).toBe(true)
-     })
-
-     it('should track user refinement cycle', async () => {
-       // Initial generation
-       await track('content_generated', { iteration: 1 })
-       await vote('turn_001' as TurnId, -1, 'Too generic')
-       
-       // Refinement
-       await track('content_refined', { iteration: 2 })
-       await vote('turn_002' as TurnId, 1, 'Much better!')
-       
-       // Final acceptance  
-       await track('content_accepted', { finalIteration: 2 })
-      
-      expect(true).toBe(true)
+      // Verify the SDK is not ready
+      expect(isBilanReady()).toBe(false)
     })
   })
 }) 
