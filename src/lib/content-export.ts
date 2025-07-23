@@ -8,11 +8,8 @@
 import type { 
   ContentSession, 
   ContentIteration, 
-  UserFeedback as _UserFeedback, 
   SessionId,
-  IterationId as _IterationId,
-  ContentType,
-  SessionStats as _SessionStats
+  ContentType
 } from '../types'
 import { getContentSessionStats } from './content-session-manager'
 import { analyzeSessionProgress, type ComparisonAnalysis } from './content-comparison'
@@ -500,10 +497,10 @@ export class ContentExportService {
   private async generatePDFReadyExport(
     session: ContentSession,
     template: ExportTemplate,
-    _options: ExportOptions
+    options: ExportOptions
   ): Promise<string> {
     // Generate HTML optimized for PDF conversion
-    const html = await this.generateHTMLExport(session, template, _options)
+    const html = await this.generateHTMLExport(session, template, options)
     
     // Add PDF-specific styles
     const pdfStyles = `
@@ -626,8 +623,8 @@ export class ContentExportService {
       // Browser environment - use localStorage
       try {
         localStorage.setItem(`shared_${shareCode}`, JSON.stringify(session))
-      } catch {
-        console.warn('localStorage not available, falling back to in-memory storage')
+      } catch (error) {
+        console.info('localStorage not available, falling back to in-memory storage:', error)
         serverSharedSessions.set(shareCode, session)
       }
     } else {
@@ -694,8 +691,8 @@ export class ContentExportService {
       try {
         const stored = localStorage.getItem(`shared_${shareCode}`)
         return stored ? JSON.parse(stored) : null
-      } catch {
-        console.warn('localStorage error, trying in-memory storage')
+      } catch (error) {
+        console.info('localStorage error, falling back to in-memory storage:', error)
         // Fall back to in-memory storage
         return serverSharedSessions.get(shareCode) || null
       }
