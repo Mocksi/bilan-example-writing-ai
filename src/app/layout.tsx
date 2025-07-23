@@ -6,6 +6,8 @@ import { Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import { theme } from './theme';
+import { AppShell } from '../components/AppShell';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,7 +39,11 @@ export default function RootLayout({
       >
         <MantineProvider theme={theme}>
           <Notifications />
-          {children}
+          <ErrorBoundary>
+            <AppShell>
+              {children}
+            </AppShell>
+          </ErrorBoundary>
         </MantineProvider>
       </body>
     </html>
