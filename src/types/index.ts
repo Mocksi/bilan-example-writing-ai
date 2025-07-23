@@ -95,9 +95,9 @@ export const createTurnId = (id: string): TurnId => id as TurnId
 /**
  * ID generation utilities
  */
-export const generateSessionId = (): SessionId => createSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
-export const generateIterationId = (): IterationId => createIterationId(`iter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
-export const generateTurnId = (): TurnId => createTurnId(`turn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`)
+export const generateSessionId = (): SessionId => createSessionId(`session_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`)
+export const generateIterationId = (): IterationId => createIterationId(`iter_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`)
+export const generateTurnId = (): TurnId => createTurnId(`turn_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`)
 
 /**
  * Bilan Event Metadata - rich context data sent with analytics events
