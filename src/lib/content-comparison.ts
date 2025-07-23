@@ -185,7 +185,7 @@ export class ContentComparisonService {
     const userSatisfactionTrend = this.analyzeSatisfactionTrend(iterations)
     
     // Generate recommended actions
-    const recommendedNext = this.generateRecommendedActions(
+    const recommendedNext = await this.generateRecommendedActions(
       iterations,
       qualityProgression,
       userSatisfactionTrend
@@ -565,11 +565,11 @@ export class ContentComparisonService {
   /**
    * Generate actionable recommendations
    */
-  private generateRecommendedActions(
+  private async generateRecommendedActions(
     iterations: ContentIteration[],
     qualityProgression: QualityMetric[],
     satisfactionTrend: SatisfactionTrend
-  ): RecommendedAction[] {
+  ): Promise<RecommendedAction[]> {
     const actions: RecommendedAction[] = []
 
     // Analyze recent performance
@@ -1044,7 +1044,7 @@ export class ContentComparisonService {
     return (structuralScore + lengthScore) / 2
   }
 
-  private calculateStyleScore(analysis: ContentAnalysisResult): Number {
+  private calculateStyleScore(analysis: ContentAnalysisResult): number {
     const style = analysis.styleSummary
     let score = 0.5
     
