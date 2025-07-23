@@ -1,0 +1,368 @@
+# Bilan Content Creation Demo - Project Rules
+
+## Project Overview
+This is a demonstration application showcasing Bilan's analytics capabilities through an AI-powered content creation assistant. The app enables users to create, iterate, and refine written content while Bilan captures behavioral patterns and user satisfaction signals in the background.
+
+**Purpose**: Template repository demonstrating Bilan SDK integration in a real-world AI application
+**Target Users**: Developers evaluating Bilan for their AI products, product managers building AI applications
+
+## Tech Stack & Architecture
+- **Frontend**: Next.js 14 with App Router + TypeScript
+- **UI Framework**: Mantine v7 (comprehensive components, zero config)
+- **AI Integration**: Ollama + TinyLlama (local inference, no API keys)
+- **Analytics**: Bilan SDK for comprehensive event tracking
+- **Styling**: Mantine's built-in styling system
+- **Deployment**: Template repository for easy cloning and local setup
+
+## Core Principles
+
+### Developer Experience First
+- **Easy Setup**: <10 minutes from clone to running demo
+- **No API Keys Required**: Local Ollama inference for immediate testing  
+- **TypeScript-First**: Full type safety for all data models and API calls
+- **Clear Documentation**: Setup instructions that work for all skill levels
+- **Template Ready**: Repository structure suitable for cloning and customization
+
+### Performance Standards
+- **Content Generation**: <3 seconds for typical content (TinyLlama local inference)
+- **UI Responsiveness**: <100ms for user interactions
+- **Bundle Size**: Optimized for fast loading while showcasing rich functionality
+- **Analytics Tracking**: Real-time event capture without UI lag
+
+### Demonstration Goals
+- **Showcase Bilan Value**: Clear connection between user actions and analytics insights
+- **Real-World Patterns**: Authentic content creation workflows users recognize
+- **Analytics Visibility**: Live feed showing Bilan events as they occur
+- **Dashboard Integration**: Seamless connection to Bilan analytics dashboard
+
+## Code Style & Standards
+
+### TypeScript
+- Use strict mode with all strict flags enabled
+- Implement data models from tech spec: `ContentSession`, `ContentIteration`, `UserFeedback`  
+- Use branded types for IDs: `type SessionId = string & { __brand: 'SessionId' }`
+- Export all interfaces for extensibility
+- Comprehensive JSDoc for complex business logic
+
+### Next.js 14 App Router
+- Use App Router exclusively (not Pages Router)
+- Prefer server components for static content
+- Use client components for interactivity (content creation, feedback)
+- Implement proper error boundaries for AI integration failures
+- API routes for Ollama integration and analytics tracking
+
+### Mantine v7 Integration
+- Use Mantine components exclusively for UI consistency
+- Leverage built-in form handling for user inputs
+- Implement proper loading states with Mantine's skeleton components
+- Use Mantine's notification system for user feedback
+- Dark mode support through Mantine's built-in theming
+
+### AI Integration Patterns
+- **Ollama Health Checks**: Verify service availability before content generation
+- **Error Handling**: Graceful degradation when Ollama is unavailable
+- **Streaming Support**: Progressive content display for better UX
+- **Prompt Engineering**: Template-based prompts with context injection
+
+## File Structure & Organization
+
+### Project Structure
+```
+src/
+├── app/                 # Next.js App Router
+│   ├── layout.tsx      # Root layout with Mantine provider
+│   ├── page.tsx        # Content type selection landing page
+│   └── api/            # API routes for Ollama and analytics
+├── components/          # React components
+│   ├── ContentCreator/ # Main content generation interface
+│   ├── FeedbackSystem/ # User feedback collection components
+│   └── AnalyticsFeed/  # Real-time Bilan events display
+├── lib/                 # Utility libraries
+│   ├── ollama.ts       # Ollama API client
+│   ├── bilan.ts        # Bilan SDK configuration
+│   └── prompts.ts      # Prompt templates for content types
+├── hooks/               # Custom React hooks
+│   ├── useContentSession.ts
+│   └── useAnalytics.ts
+├── types/               # TypeScript definitions
+│   └── index.ts        # All data models and interfaces
+└── utils/               # Helper functions
+    └── content-processing.ts
+```
+
+### Naming Conventions
+- Use PascalCase for React components: `ContentCreator.tsx`
+- Use camelCase for hooks, utilities, and variables: `useContentSession`
+- Use kebab-case for API routes: `/api/content/generate`
+- Use descriptive names that reflect business domain: `ContentIteration`, `UserFeedback`
+
+## Data Models (From Tech Spec)
+
+### Core Content Models
+```typescript
+// Implement exactly as specified in tech spec
+interface ContentSession {
+  id: string
+  contentType: 'blog' | 'email' | 'social'
+  userBrief: string
+  iterations: ContentIteration[]
+  status: 'active' | 'completed' | 'abandoned'
+  startTime: timestamp
+  endTime?: timestamp
+}
+
+interface ContentIteration {
+  id: string
+  attemptNumber: number
+  prompt: string
+  generatedContent: string
+  userFeedback?: UserFeedback
+  bilanTurnId: string
+  timing: {
+    requestTime: timestamp
+    responseTime: timestamp
+    userResponseTime?: timestamp
+  }
+}
+
+interface UserFeedback {
+  type: 'accept' | 'reject' | 'refine'
+  rating?: 1 | -1
+  refinementRequest?: string
+  quickFeedback?: string[]
+  acceptanceLevel?: 'as_is' | 'light_edit' | 'heavy_edit' | 'inspiration'
+}
+```
+
+## Integration Standards
+
+### Ollama Integration
+- **Connection**: HTTP client to `localhost:11434`
+- **Health Check**: Verify `/api/tags` endpoint before content generation
+- **Error Handling**: Clear user messaging when Ollama is unavailable
+- **Model Management**: TinyLlama model with fallback messaging
+- **Response Processing**: Parse and format AI responses for display
+
+### Bilan SDK Integration  
+- **Initialization**: Local mode with user session management
+- **Event Tracking**: Comprehensive wrapper around all AI interactions
+- **Event Types**: Turn events, vote events, journey events, conversation events
+- **Metadata**: Rich context including content type, iteration number, user feedback
+- **Real-time Display**: Live analytics feed showing events as they occur
+
+### Content Generation Workflow
+```typescript
+// Example integration pattern
+const { result, turnId } = await trackTurn(
+  userPrompt,
+  () => generateContentWithOllama(prompt, contentType),
+  {
+    contentType,
+    iterationNumber,
+    conversationId,
+    journey_id: 'content-creation-workflow'
+  }
+)
+
+// User feedback with automatic correlation
+await vote(turnId, userRating, userComment)
+```
+
+## User Experience Standards
+
+### Content Creation Flow
+- **Clear Content Type Selection**: Blog, Email, Social Media with descriptions
+- **Progressive Disclosure**: Simple initial input, advanced options available  
+- **Iteration Management**: Clear visual indication of attempt numbers
+- **Version Comparison**: Side-by-side view of different attempts
+- **Feedback Collection**: Multiple feedback mechanisms (quick buttons + detailed input)
+
+### Analytics Demonstration
+- **Live Event Feed**: Sidebar showing Bilan events in real-time
+- **Dashboard Integration**: Prominent link to actual Bilan analytics dashboard
+- **User Journey Visualization**: Clear connection between actions and analytics
+- **Trust Metrics Display**: Show how user interactions affect trust scores
+
+### Error Handling & Loading States
+- **Ollama Unavailable**: Clear setup instructions and health check
+- **Content Generation Failure**: Retry options with helpful error messages
+- **Network Issues**: Graceful degradation with offline indicators
+- **Loading States**: Skeleton screens and progress indicators during AI generation
+
+## Testing Standards
+
+### Component Testing
+- Test content creation workflow end-to-end
+- Verify Bilan event generation for all user interactions
+- Mock Ollama responses for reliable testing
+- Test error states and recovery paths
+
+### Integration Testing  
+- Verify Ollama API integration and error handling
+- Test Bilan SDK event tracking across complete user journeys
+- Validate data model consistency between components
+- Test analytics feed updates and dashboard integration
+
+### User Experience Testing
+- Complete user journeys for each content type
+- Feedback processing and refinement workflows
+- Session management and state persistence
+- Cross-browser compatibility and responsive design
+
+## Performance Optimization
+
+### AI Integration Performance
+- **Response Streaming**: Progressive content display during generation
+- **Request Optimization**: Efficient prompt engineering for faster responses
+- **Caching**: Local storage of successful content for comparison
+- **Background Processing**: Non-blocking analytics event transmission
+
+### Frontend Performance
+- **Code Splitting**: Lazy load content type specific components
+- **State Management**: Efficient React re-renders with proper memoization
+- **Bundle Optimization**: Tree-shake Mantine components and utilities
+- **Memory Management**: Cleanup of content history after session completion
+
+## Security & Privacy
+
+### Local-First Approach
+- **No External API Keys**: Ollama runs locally, no third-party AI services
+- **Minimal Data Collection**: Only usage analytics through Bilan SDK
+- **Session-Only Storage**: Content not persisted beyond active session
+- **User Consent**: Clear disclosure of analytics data collection
+
+### Data Handling
+- **Content Privacy**: User-generated content never leaves local machine (except analytics events)
+- **Analytics Privacy**: Only behavioral patterns and satisfaction signals sent to Bilan
+- **Error Logging**: No sensitive data in error logs or debugging output
+
+## Documentation Standards
+
+### Setup Documentation
+- **Prerequisites**: Ollama installation and model download instructions
+- **Quick Start**: Clone to running demo in <10 minutes
+- **Configuration**: Environment variables and optional Bilan server setup
+- **Troubleshooting**: Common issues and solutions
+
+### Code Documentation
+- **Business Logic**: Comprehensive JSDoc for content generation and analytics integration
+- **Component Props**: Clear interface documentation for all React components
+- **API Routes**: Input/output documentation for all endpoints
+- **Integration Patterns**: Examples of extending the demo for other use cases
+
+## Common Patterns
+
+### Content Generation Pattern
+```typescript
+const generateContent = async (
+  userBrief: string, 
+  contentType: ContentType,
+  previousAttempts: ContentIteration[]
+) => {
+  const { result, turnId } = await trackTurn(
+    buildPrompt(userBrief, contentType, previousAttempts),
+    () => ollamaClient.generate({
+      model: 'tinyllama',
+      prompt: buildPrompt(userBrief, contentType, previousAttempts)
+    }),
+    {
+      contentType,
+      iterationNumber: previousAttempts.length + 1,
+      journey_id: 'content-creation-workflow'
+    }
+  )
+  
+  return { content: result.response, turnId }
+}
+```
+
+### User Feedback Pattern
+```typescript
+const handleUserFeedback = async (
+  turnId: string,
+  feedback: UserFeedback
+) => {
+  // Record explicit feedback
+  await vote(turnId, feedback.rating, feedback.refinementRequest)
+  
+  // Track journey progression
+  if (feedback.type === 'accept') {
+    await trackJourneyStep('content-creation-workflow', 'content-accepted', userId)
+  }
+  
+  // Update local state for UI
+  updateContentIteration(turnId, feedback)
+}
+```
+
+### Error Handling Pattern
+```typescript
+const handleOllamaError = (error: Error) => {
+  if (error.message.includes('connection refused')) {
+    showNotification({
+      title: 'Ollama Not Running',
+      message: 'Please start Ollama and ensure TinyLlama model is installed',
+      color: 'orange'
+    })
+  } else {
+    showNotification({
+      title: 'Content Generation Failed', 
+      message: 'Please try again or restart Ollama',
+      color: 'red'
+    })
+  }
+}
+```
+
+## Environment Configuration
+
+### Development Setup
+```bash
+# Required: Ollama with TinyLlama model
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=tinyllama
+
+# Optional: Bilan server integration
+NEXT_PUBLIC_BILAN_ENDPOINT=http://localhost:3002
+NEXT_PUBLIC_BILAN_MODE=local
+
+# Development flags
+NEXT_PUBLIC_DEBUG=true
+NEXT_PUBLIC_SHOW_ANALYTICS_FEED=true
+```
+
+### Production Deployment
+- Static site generation compatible
+- Environment variable validation on startup
+- Graceful degradation when services unavailable
+- Clear error messaging for missing dependencies
+
+## Git Workflow & Permissions
+
+### Commit Strategy
+- **Template Repository Goal**: Maintain clean, educational commit history
+- **Feature Branches**: All development work in feature branches
+- **Atomic Commits**: One logical change per commit
+- **Clear Messages**: Descriptive commits that explain business value
+- **User Permission**: Always ask before committing changes
+
+### Commit Categories for Demo Project
+- `feat: add content type selection interface`
+- `integrate: connect Ollama API for content generation`  
+- `analytics: implement Bilan event tracking for user feedback`
+- `ui: improve content iteration display with Mantine components`
+- `docs: add setup instructions for Ollama and TinyLlama`
+
+## Final Notes
+
+### Demo-Specific Considerations
+- **Educational Value**: Code should be readable and exemplary for developers learning Bilan
+- **Template Repository**: Structure should be easily cloneable and customizable
+- **Showcase Focus**: Every feature should demonstrate Bilan's analytics capabilities
+- **Real-World Authenticity**: Avoid toy examples, build genuine content creation workflows
+
+### Success Metrics
+- **Setup Time**: New users can run demo in <10 minutes
+- **Analytics Clarity**: Clear connection between user actions and Bilan insights
+- **Code Quality**: Exemplary TypeScript and React patterns for community
+- **Extensibility**: Easy to adapt for other AI use cases and content types 
