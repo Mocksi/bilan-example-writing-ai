@@ -55,9 +55,22 @@ This demo uses Transformers.js for completely local AI inference:
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `NEXT_PUBLIC_AI_MODEL` | Transformers.js model | `Xenova/distilgpt2` | No |
-| `NEXT_PUBLIC_BILAN_ENDPOINT` | Bilan server URL | - | Optional |
+| `NEXT_PUBLIC_BILAN_ENDPOINT` | Bilan server URL | - | **Conditional*** |
 | `NEXT_PUBLIC_BILAN_MODE` | Bilan mode | `local` | No |
 | `NEXT_PUBLIC_DEBUG` | Enable debug logging | `false` | No |
+
+***BILAN_ENDPOINT Requirements:**
+- **Required when `BILAN_MODE="server"`** - Application will throw startup error if missing
+- **Required for analytics dashboard access** - Navigation to analytics will throw runtime error if missing
+- **Optional for `BILAN_MODE="local"`** - Analytics will work in local mode without external server
+- **Format**: Full URL including protocol (e.g., `http://localhost:3002` or `https://your-bilan-server.com`)
+
+### Error Behaviors
+
+The application will throw explicit errors in these cases:
+- **Startup Error**: When `BILAN_MODE="server"` but `BILAN_ENDPOINT` is not configured
+- **Runtime Error**: When clicking "View Analytics" but `BILAN_ENDPOINT` is not configured
+- **Purpose**: Prevents silent failures and ensures proper Bilan server integration
 
 ## Usage
 

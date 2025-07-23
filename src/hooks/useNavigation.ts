@@ -3,6 +3,7 @@
 import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ContentType } from '../types'
+import { env } from '../lib/env'
 
 /**
  * Navigation state interface for tracking current application navigation context
@@ -119,11 +120,12 @@ export function useNavigation() {
 
   const navigateToAnalytics = useCallback(() => {
     // Open external Bilan dashboard in new tab
-    // For now, we'll use a placeholder URL - this should be configured via environment variables
-    const bilanDashboardUrl = process.env.NEXT_PUBLIC_BILAN_ENDPOINT 
-      ? `${process.env.NEXT_PUBLIC_BILAN_ENDPOINT}/dashboard`
-      : 'https://dashboard.bilan.ai' // Fallback placeholder URL
+    // Requires BILAN_ENDPOINT to be configured in environment variables
+    if (!env.BILAN_ENDPOINT) {
+      throw new Error('BILAN_ENDPOINT must be configured to access analytics dashboard')
+    }
     
+    const bilanDashboardUrl = `${env.BILAN_ENDPOINT}/dashboard`
     window.open(bilanDashboardUrl, '_blank', 'noopener,noreferrer')
   }, [])
 
