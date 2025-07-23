@@ -8,6 +8,7 @@
  */
 
 import { env } from './env'
+import { analyticsErrorManager, withErrorHandling } from './analytics-error-handling'
 import type { 
   UserId, 
   SessionId, 
@@ -139,6 +140,11 @@ class BilanClient {
       return
     }
 
+    // Validate event data
+    if (!analyticsErrorManager.validateEventData(eventType, properties)) {
+      return
+    }
+
     const event: BilanEvent = {
       eventType,
       timestamp: Date.now(),
@@ -163,17 +169,14 @@ class BilanClient {
       }
     })
 
-    try {
-      await this.sendEvent(event)
-      
-      if (this.config.debug) {
-        console.log('Bilan event sent:', event)
-      }
-    } catch (error) {
-      if (this.config.debug) {
-        console.error('Failed to send Bilan event:', error)
-      }
-      // Don't throw - analytics should never break the app
+    // Send event with error handling and retry
+    await analyticsErrorManager.fireAndForget(
+      () => this.sendEvent(event),
+      { eventType, userId: this.currentUserId }
+    )
+
+    if (this.config.debug) {
+      console.log('Bilan event queued:', event)
     }
   }
 
@@ -185,12 +188,16 @@ class BilanClient {
     rating: 1 | -1, 
     comment?: string
   ): Promise<void> {
-    await this.track('user_vote', {
-      turnId,
-      rating,
-      comment,
-      timestamp: Date.now()
-    })
+    // Vote is critical for analytics - use fire-and-forget pattern
+    await analyticsErrorManager.fireAndForget(
+      () => this.track('user_vote', {
+        turnId,
+        rating,
+        comment,
+        timestamp: Date.now()
+      }),
+      { action: 'vote', turnId, rating }
+    )
   }
 
   /**
