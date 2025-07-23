@@ -1,103 +1,126 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { Container, Title, Text, SimpleGrid, Stack } from '@mantine/core'
+import { ContentTypeCard } from '../components/ContentTypeCard'
+import type { ContentType } from '../types'
+import { useNavigation } from '../hooks'
+
+/**
+ * Core business logic configuration for AI content generation types
+ * 
+ * This array defines the three primary content types available in the Bilan Content Creation Demo,
+ * serving as the foundation for the content type selection interface and subsequent AI generation workflows.
+ * Each content type has specific characteristics that influence prompt engineering, AI model parameters,
+ * and user experience patterns.
+ * 
+ * @remarks
+ * This configuration drives the entire content creation user journey:
+ * - Content type selection UI rendering
+ * - AI prompt template selection in lib/prompts.ts
+ * - Content generation parameter tuning in lib/content-generation.ts
+ * - Bilan analytics event categorization and tracking
+ * 
+ * @example
+ * ```typescript
+ * // Each content type object structure:
+ * {
+ *   contentType: 'blog',           // Typed enum value for internal processing
+ *   title: 'Blog Posts',          // User-facing display name
+ *   description: 'Create...',     // Explanatory text for user guidance
+ *   icon: '📝',                   // Visual identifier (emoji)
+ *   examples: ['...', '...']      // Concrete use cases to inspire users
+ * }
+ * ```
+ */
+const contentTypes = [
+  {
+    /** @property {ContentType} contentType - Typed enum value used throughout the application for content processing */
+    contentType: 'blog' as ContentType,
+    /** @property {string} title - User-facing display name shown in selection cards and navigation */
+    title: 'Blog Posts',
+    /** @property {string} description - Explanatory text helping users understand this content type's purpose */
+    description: 'Create engaging blog posts and articles with AI assistance. Perfect for thought leadership, tutorials, and storytelling.',
+    /** @property {string} icon - Emoji icon providing visual identification in the UI */
+    icon: '📝',
+    /** @property {string[]} examples - Concrete use cases that inspire users and demonstrate content type capabilities */
+    examples: [
+      'AI development best practices for startups',
+      'The future of remote work trends',
+      'How to build better coding habits'
+    ]
+  },
+  {
+    /** @property {ContentType} contentType - Professional email content type for business communication */
+    contentType: 'email' as ContentType,
+    /** @property {string} title - Display name emphasizing professional email writing capabilities */
+    title: 'Email Writing',
+    /** @property {string} description - Focuses on results-oriented business communication use cases */
+    description: 'Craft professional emails that get results. From follow-ups to announcements, create clear and effective communication.',
+    /** @property {string} icon - Email emoji representing digital correspondence */
+    icon: '📧',
+    /** @property {string[]} examples - Business-focused email scenarios for various professional contexts */
+    examples: [
+      'Follow-up after networking event',
+      'Project update to stakeholders',
+      'Customer onboarding sequence'
+    ]
+  },
+  {
+    /** @property {ContentType} contentType - Social media content type optimized for engagement and virality */
+    contentType: 'social' as ContentType,
+    /** @property {string} title - Display name highlighting social media content creation */
+    title: 'Social Media',
+    /** @property {string} description - Emphasizes engagement-driven content for social platforms */
+    description: 'Generate engaging social media content that drives interaction. Create posts that capture attention and spark conversation.',
+    /** @property {string} icon - Mobile phone emoji representing social media platforms */
+    icon: '📱',
+    /** @property {string[]} examples - Social media post types across different content categories */
+    examples: [
+      'Product launch announcement',
+      'Behind-the-scenes company culture',
+      'Industry insights and tips'
+    ]
+  }
+]
+
+export default function HomePage() {
+  const { navigateToCreator } = useNavigation()
+
+  const handleContentTypeSelect = (contentType: ContentType) => {
+    navigateToCreator(contentType)
+  }
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <Container size="xl" py="xl">
+      <Stack align="center" gap="xl" mb="xl">
+        <Title order={1} ta="center" fw={700}>
+          AI-Powered Content Creation
+        </Title>
+        
+        <Text size="lg" ta="center" c="dimmed" maw={600}>
+          Choose the type of content you want to create. Our AI assistant will help you 
+          craft compelling content tailored to your needs.
+        </Text>
+        
+        <Text size="sm" ta="center" c="dimmed">
+          This demo showcases <strong>Bilan SDK integration</strong> with AI content creation workflows.
+          All user interactions are tracked for analytics insights.
+        </Text>
+      </Stack>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
+        {contentTypes.map((type) => (
+          <ContentTypeCard
+            key={type.contentType}
+            contentType={type.contentType}
+            title={type.title}
+            description={type.description}
+            icon={type.icon}
+            examples={type.examples}
+            onSelect={handleContentTypeSelect}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+        ))}
+      </SimpleGrid>
+    </Container>
+  )
 }
