@@ -3,6 +3,7 @@
 import { Container, Title, Text, SimpleGrid, Stack } from '@mantine/core'
 import { ContentTypeCard } from '../components/ContentTypeCard'
 import type { ContentType } from '../types'
+import { useNavigation } from '../hooks'
 
 /**
  * Core business logic configuration for AI content generation types
@@ -83,9 +84,10 @@ const contentTypes = [
 ]
 
 export default function HomePage() {
+  const { navigateToCreator } = useNavigation()
+
   const handleContentTypeSelect = (contentType: ContentType) => {
-    // TODO: Navigate to content creator page
-    console.log('Selected content type:', contentType)
+    navigateToCreator(contentType)
   }
 
   return (

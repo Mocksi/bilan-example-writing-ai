@@ -26,8 +26,34 @@ export const metadata: Metadata = {
 };
 
 /**
- * Validate environment variables on startup
- * Returns validation result with config or error details
+ * Validates critical environment variables required for application startup
+ * 
+ * Performs comprehensive validation of environment configuration using getEnvironmentConfig()
+ * and returns a structured result indicating success/failure with detailed error information.
+ * This validation ensures the application has all required configuration before rendering
+ * any UI components, preventing runtime failures due to missing environment setup.
+ * 
+ * @function validateEnvironment
+ * @returns {Object} Validation result object
+ * @returns {boolean} returns.success - Whether validation passed
+ * @returns {EnvironmentConfig|null} returns.config - Validated config object or null on failure  
+ * @returns {string|null} returns.error - Error message describing validation failure
+ * 
+ * @remarks
+ * This function is called during root layout initialization to ensure:
+ * - Required environment variables are present and valid
+ * - Bilan SDK configuration is properly set up
+ * - AI model configuration is available
+ * - Development flags are correctly parsed
+ * 
+ * @example
+ * ```typescript
+ * const validation = validateEnvironment()
+ * if (!validation.success) {
+ *   return <ErrorFallback error={validation.error} />
+ * }
+ * // Proceed with normal app rendering
+ * ```
  */
 function validateEnvironment() {
   try {

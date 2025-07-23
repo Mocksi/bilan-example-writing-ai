@@ -1,6 +1,6 @@
 'use client'
 
-import { Container, Title, Text, Card, Button, Group } from '@mantine/core'
+import { Container, Title, Text, Card, Button, Group, Skeleton } from '@mantine/core'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 import type { ContentType } from '../../types'
@@ -107,9 +107,20 @@ function CreatePageContent() {
 export default function CreatePage() {
   return (
     <Suspense fallback={
-      <Container size="sm" py="xl">
-        <Card withBorder p="xl" ta="center">
-          <Text>Loading...</Text>
+      <Container size="xl" py="xl">
+        <Card withBorder p="xl">
+          <Group justify="space-between" mb="lg">
+            <div>
+              <Skeleton height={32} width={200} mb="xs" />
+              <Skeleton height={16} width={150} />
+            </div>
+            <Skeleton height={36} width={120} />
+          </Group>
+          <Card withBorder p="lg" bg="gray.0">
+            <Skeleton height={24} width={250} mb="md" />
+            <Skeleton height={16} width="100%" mb="xs" />
+            <Skeleton height={16} width="80%" />
+          </Card>
         </Card>
       </Container>
     }>
