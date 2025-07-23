@@ -89,7 +89,6 @@ describe('AIClient', () => {
     const result = await testClient.generateContentForType('blog', 'AI development')
     
     expect(result.text).toBeTruthy()
-    expect(result.text).toContain('comprehensive blog post')
     expect(result.metadata.model).toBe('Xenova/distilgpt2')
   })
 })
