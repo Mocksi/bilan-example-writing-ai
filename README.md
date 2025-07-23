@@ -6,7 +6,7 @@ A demonstration application showcasing how to integrate Bilan SDK into an AI-pow
 
 ## Features
 
-- 🤖 **AI Content Generation**: Local Ollama + TinyLlama for blog posts, emails, and social media
+- 🤖 **AI Content Generation**: Local Transformers.js for blog posts, emails, and social media
 - 📊 **Comprehensive Analytics**: Full Bilan SDK integration with turn tracking, user feedback, and journey analytics
 - 🎨 **Modern UI**: Mantine v7 components with responsive design
 - 🔄 **Iterative Refinement**: Multi-turn content improvement workflow
@@ -17,24 +17,15 @@ A demonstration application showcasing how to integrate Bilan SDK into an AI-pow
 Before you begin, ensure you have:
 
 - **Node.js 18+** installed
-- **Ollama** installed and running locally
-- **TinyLlama model** downloaded in Ollama
+- **Modern browser** with WebAssembly support
 
-### Ollama Setup
+### Zero Setup Required
 
-1. Install Ollama from [https://ollama.ai](https://ollama.ai)
-2. Start Ollama service:
-   ```bash
-   ollama serve
-   ```
-3. Download TinyLlama model:
-   ```bash
-   ollama pull tinyllama
-   ```
-4. Verify installation:
-   ```bash
-   ollama list
-   ```
+This demo uses Transformers.js for completely local AI inference:
+- ✅ No external services or APIs required
+- ✅ No model installation needed
+- ✅ Works completely offline after first model download
+- ✅ Models download automatically on first use
 
 ## Quick Start
 
@@ -63,8 +54,7 @@ Before you begin, ensure you have:
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `OLLAMA_HOST` | Ollama API endpoint | `http://localhost:11434` | Yes |
-| `OLLAMA_MODEL` | AI model to use | `tinyllama` | Yes |
+| `NEXT_PUBLIC_AI_MODEL` | Transformers.js model | `Xenova/distilgpt2` | No |
 | `NEXT_PUBLIC_BILAN_ENDPOINT` | Bilan server URL | - | Optional |
 | `NEXT_PUBLIC_BILAN_MODE` | Bilan mode | `local` | No |
 | `NEXT_PUBLIC_DEBUG` | Enable debug logging | `false` | No |
