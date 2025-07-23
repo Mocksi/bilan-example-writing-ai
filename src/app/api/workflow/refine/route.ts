@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { processContentRefinement } from '../../../../lib/refinement-processor'
 import { addIterationFeedback } from '../../../../lib/iteration-manager'
 import { getContentSession } from '../../../../lib/content-session-manager'
-import type { ContentType, SessionId, IterationId, UserFeedback } from '../../../../types'
+import type { ContentType, UserFeedback } from '../../../../types'
 import { createSessionId, createIterationId } from '../../../../types'
 
 export interface RefineContentRequest {
