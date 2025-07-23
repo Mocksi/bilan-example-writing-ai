@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { generateContentForType } from '../../../../lib/ai-client'
-import { createContentSession, addContentIteration } from '../../../../lib/content-session-manager'
+import { createContentSession, addContentIteration, getContentSession } from '../../../../lib/content-session-manager'
 import { createIteration } from '../../../../lib/iteration-manager'
 import type { ContentType, SessionId } from '../../../../types'
 import { createSessionId } from '../../../../types'
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateC
 
     // Get or create session
     let sessionId: SessionId
-    let session = body.sessionId ? (await import('../../../../lib/content-session-manager')).getContentSession(createSessionId(body.sessionId)) : null
+    let session = body.sessionId ? getContentSession(createSessionId(body.sessionId)) : null
     
     if (!session) {
       // Create new session
