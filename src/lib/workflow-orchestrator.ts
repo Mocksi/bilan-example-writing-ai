@@ -18,7 +18,8 @@ import {
   createContentSession,
   updateContentSession,
   getContentSession,
-  completeContentSession
+  completeContentSession,
+  addContentIteration
 } from './content-session-manager'
 import { 
   iterationManager,
@@ -166,8 +167,13 @@ export class WorkflowOrchestrator {
         { requestTime: startTime, responseTime }
       )
 
-      // Update session with new iteration
-      session.iterations.push(iteration)
+      // Update session with new iteration using proper persistence
+      await addContentIteration(session.id, {
+        prompt: this.buildPromptFromRequest(request),
+        generatedContent: iteration.generatedContent,
+        bilanTurnId: iteration.bilanTurnId,
+        timing: iteration.timing
+      })
 
       // Get session stats for metadata
       const sessionStats = this.config.enableAnalytics 
@@ -198,11 +204,14 @@ export class WorkflowOrchestrator {
       }
 
     } catch (error) {
-      this.updateWorkflowState(request.sessionId!, {
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error',
-        lastActivity: Date.now()
-      })
+      // Only update workflow state if sessionId exists
+      if (request.sessionId) {
+        this.updateWorkflowState(request.sessionId, {
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          lastActivity: Date.now()
+        })
+      }
 
       throw error
     }
