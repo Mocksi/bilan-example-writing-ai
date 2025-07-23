@@ -15,6 +15,7 @@ import type {
   UserFeedback,
   SessionStats
 } from '../types'
+import type { MetadataRecord } from '../types/lint-types'
 import { 
   generateSessionId, 
   generateIterationId,
@@ -33,13 +34,13 @@ export interface CreateSessionOptions {
   contentType: ContentType
   userBrief: string
   userId?: string
-  metadata?: Record<string, any>
+  metadata?: MetadataRecord
 }
 
 export interface SessionUpdateOptions {
   status?: SessionStatus
   userBrief?: string
-  metadata?: Record<string, any>
+  metadata?: MetadataRecord
 }
 
 export interface SessionQuery {
@@ -381,7 +382,7 @@ export class ContentSessionManager {
         return
       }
 
-      const sessionsData: [string, any][] = JSON.parse(stored)
+      const sessionsData: [string, unknown][] = JSON.parse(stored)
       
       for (const [sessionIdStr, sessionData] of sessionsData) {
         if (isContentSession(sessionData)) {

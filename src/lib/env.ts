@@ -25,7 +25,7 @@ export interface EnvironmentConfig {
 export function getEnvVar(key: string, defaultValue: string = ''): string {
   if (typeof window !== 'undefined') {
     // Client-side: access from window if available, fallback to build-time values
-    return (window as any).__ENV__?.[key] || process.env[key] || defaultValue
+    return (window as { __ENV__?: Record<string, string> }).__ENV__?.[key] || process.env[key] || defaultValue
   }
   // Server-side: access from process.env
   return process.env[key] || defaultValue

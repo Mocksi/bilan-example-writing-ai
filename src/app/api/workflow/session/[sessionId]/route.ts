@@ -14,21 +14,22 @@ import {
 import { analyzeSessionProgress } from '../../../../../lib/content-comparison'
 import type { SessionStatus } from '../../../../../types'
 import { createSessionId } from '../../../../../types'
+import type { ApiErrorDetails, MetadataRecord } from '../../../../../types/lint-types'
 
 interface SessionResponse {
   success: boolean
-  data?: any
+  data?: unknown
   error?: {
     code: string
     message: string
-    details?: any
+    details?: ApiErrorDetails
   }
 }
 
 interface UpdateSessionRequest {
   status?: SessionStatus
   userBrief?: string
-  metadata?: Record<string, any>
+  metadata?: MetadataRecord
 }
 
 interface RouteParams {
@@ -85,7 +86,10 @@ export async function GET(
       error: {
         code: 'SESSION_RETRIEVAL_FAILED',
         message: error instanceof Error ? error.message : 'Failed to retrieve session',
-        details: process.env.NODE_ENV === 'development' ? error : undefined
+        details: process.env.NODE_ENV === 'development' ? {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        } : undefined
       }
     }, { status: 500 })
   }
@@ -150,7 +154,10 @@ export async function PATCH(
       error: {
         code: 'SESSION_UPDATE_FAILED',
         message: error instanceof Error ? error.message : 'Failed to update session',
-        details: process.env.NODE_ENV === 'development' ? error : undefined
+        details: process.env.NODE_ENV === 'development' ? {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        } : undefined
       }
     }, { status: 500 })
   }
@@ -194,7 +201,10 @@ export async function DELETE(
       error: {
         code: 'SESSION_DELETION_FAILED',
         message: error instanceof Error ? error.message : 'Failed to delete session',
-        details: process.env.NODE_ENV === 'development' ? error : undefined
+        details: process.env.NODE_ENV === 'development' ? {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        } : undefined
       }
     }, { status: 500 })
   }
