@@ -1,6 +1,7 @@
 'use client'
 
 import { Card, Text, Button, Group, ThemeIcon, Stack } from '@mantine/core'
+import { memo } from 'react'
 import type { ContentType } from '../types'
 
 /**
@@ -101,7 +102,51 @@ interface ContentTypeCardProps {
   disabled?: boolean
 }
 
-export function ContentTypeCard({
+/**
+ * Content type selection card component
+ * 
+ * Renders an interactive card that allows users to select a specific content type
+ * for AI-powered content generation. Each card displays the content type's title,
+ * description, visual icon, and concrete examples to help users make informed choices.
+ * 
+ * @component
+ * @param {ContentTypeCardProps} props - Component properties
+ * @param {ContentType} props.contentType - Content type identifier for AI processing
+ * @param {string} props.title - User-facing display title for the content type
+ * @param {string} props.description - Detailed explanation of the content type's purpose
+ * @param {string} props.icon - Visual emoji/icon for quick recognition
+ * @param {string[]} props.examples - Array of concrete use case examples
+ * @param {function} props.onSelect - Callback fired when user selects this content type
+ * @param {boolean} [props.disabled=false] - Optional flag to disable user interaction
+ * 
+ * @example
+ * ```tsx
+ * <ContentTypeCard
+ *   contentType="blog"
+ *   title="Blog Posts"
+ *   description="Create engaging blog posts and articles..."
+ *   icon="📝"
+ *   examples={[
+ *     "AI development best practices for startups",
+ *     "The future of remote work trends"
+ *   ]}
+ *   onSelect={(type) => handleContentTypeSelection(type)}
+ *   disabled={!isAIReady}
+ * />
+ * ```
+ * 
+ * @remarks
+ * This component is optimized with React.memo to prevent unnecessary re-renders
+ * when props haven't changed, improving performance in lists of content type cards.
+ * 
+ * The component integrates with the Bilan demo by:
+ * - Triggering analytics events when users make selections
+ * - Providing clear visual hierarchy for content type options
+ * - Supporting accessibility through proper disabled states
+ * 
+ * @returns {JSX.Element} Mantine Card component with content type information
+ */
+function ContentTypeCard({
   contentType,
   title,
   description,
@@ -160,4 +205,18 @@ export function ContentTypeCard({
       </Stack>
     </Card>
   )
-} 
+}
+
+/**
+ * Memoized ContentTypeCard component
+ * 
+ * Optimizes rendering performance by preventing unnecessary re-renders when props
+ * haven't changed. This is particularly beneficial when rendering multiple content
+ * type cards in a grid layout, as it reduces React's reconciliation overhead.
+ * 
+ * @memo
+ */
+export default memo(ContentTypeCard)
+
+// Named export for backward compatibility
+export { ContentTypeCard } 
