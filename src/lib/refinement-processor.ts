@@ -132,7 +132,7 @@ export class RefinementProcessor {
     
     const results: RefinementResult[] = []
     
-    for (const strategy of strategies) {
+    for (const _strategy of strategies) {
       try {
         const result = await this.processRefinement({
           ...request,
@@ -580,7 +580,7 @@ export class RefinementProcessor {
   /**
    * Strategy decision helpers
    */
-  private shouldUseToneAdjustment(request: RefinementRequest, context: RefinementContext): boolean {
+  private shouldUseToneAdjustment(request: RefinementRequest, _context: RefinementContext): boolean {
     const feedbackText = (request.userFeedback.refinementRequest || '').toLowerCase()
     return feedbackText.includes('tone') || 
            feedbackText.includes('formal') || 
@@ -589,7 +589,7 @@ export class RefinementProcessor {
            feedbackText.includes('friendly')
   }
 
-  private shouldUseLengthModification(request: RefinementRequest, context: RefinementContext): boolean {
+  private shouldUseLengthModification(request: RefinementRequest, _context: RefinementContext): boolean {
     const feedbackText = (request.userFeedback.refinementRequest || '').toLowerCase()
     return feedbackText.includes('longer') || 
            feedbackText.includes('shorter') || 
@@ -598,7 +598,7 @@ export class RefinementProcessor {
            feedbackText.includes('condense')
   }
 
-  private shouldUseStructureReorganization(request: RefinementRequest, context: RefinementContext): boolean {
+  private shouldUseStructureReorganization(request: RefinementRequest, _context: RefinementContext): boolean {
     const feedbackText = (request.userFeedback.refinementRequest || '').toLowerCase()
     return feedbackText.includes('structure') || 
            feedbackText.includes('organize') || 
@@ -655,7 +655,7 @@ export class RefinementProcessor {
   /**
    * Get default strategy when none are suitable
    */
-  private getDefaultStrategy(request: RefinementRequest): RefinementStrategy {
+  private getDefaultStrategy(_request: RefinementRequest): RefinementStrategy {
     return {
       type: 'style_refinement',
       description: 'General style and content refinement',

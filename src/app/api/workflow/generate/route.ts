@@ -4,7 +4,8 @@
  * Handles content generation requests through the workflow engine.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
 import { generateContentForType } from '../../../../lib/ai-client'
 import { createContentSession, addContentIteration, getContentSession } from '../../../../lib/content-session-manager'
 import { createIteration } from '../../../../lib/iteration-manager'

@@ -8,9 +8,9 @@
 import type { 
   ContentSession, 
   ContentIteration, 
-  UserFeedback, 
+  UserFeedback as _UserFeedback, 
   SessionId,
-  IterationId,
+  IterationId as _IterationId,
   ContentType,
   SessionStats as _SessionStats
 } from '../types'
@@ -521,7 +521,7 @@ export class ContentExportService {
 
   private async generateCSVExport(
     session: ContentSession,
-    options: ExportOptions
+    _options: ExportOptions
   ): Promise<string> {
     const rows: string[] = []
     
@@ -626,7 +626,7 @@ export class ContentExportService {
       // Browser environment - use localStorage
       try {
         localStorage.setItem(`shared_${shareCode}`, JSON.stringify(session))
-      } catch (_error) {
+      } catch {
         console.warn('localStorage not available, falling back to in-memory storage')
         serverSharedSessions.set(shareCode, session)
       }
@@ -694,7 +694,7 @@ export class ContentExportService {
       try {
         const stored = localStorage.getItem(`shared_${shareCode}`)
         return stored ? JSON.parse(stored) : null
-      } catch (_error) {
+      } catch {
         console.warn('localStorage error, trying in-memory storage')
         // Fall back to in-memory storage
         return serverSharedSessions.get(shareCode) || null

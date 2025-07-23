@@ -4,7 +4,8 @@
  * Handles session retrieval, updates, and analysis.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
 import { 
   getContentSession, 
   updateContentSession, 
@@ -59,7 +60,7 @@ export async function GET(
     const includeStats = url.searchParams.get('includeStats') === 'true'
     const includeAnalysis = url.searchParams.get('includeAnalysis') === 'true'
 
-    let responseData: any = {
+    const responseData: any = {
       session
     }
 

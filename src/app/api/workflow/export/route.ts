@@ -4,7 +4,8 @@
  * Handles content export requests in various formats.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
 import { getContentSession } from '../../../../lib/content-session-manager'
 import { 
   exportContentSession, 

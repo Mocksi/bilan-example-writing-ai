@@ -16,29 +16,29 @@ import type {
 import { 
   contentSessionManager,
   createContentSession,
-  updateContentSession,
+  updateContentSession as _updateContentSession,
   getContentSession,
   completeContentSession,
   addContentIteration
 } from './content-session-manager'
 import { 
-  iterationManager,
+  iterationManager as _iterationManager,
   createIteration,
   addIterationFeedback,
-  getIterationHistory
+  getIterationHistory as _getIterationHistory
 } from './iteration-manager'
 import { 
-  refinementProcessor,
+  refinementProcessor as _refinementProcessor,
   processContentRefinement,
   analyzeFeedbackPatterns
 } from './refinement-processor'
 import { 
-  contentComparisonService,
+  contentComparisonService as _contentComparisonService,
   analyzeSessionProgress,
   createSideBySideComparison
 } from './content-comparison'
 import { 
-  contentExportService,
+  contentExportService as _contentExportService,
   exportContentSession,
   createContentSummary
 } from './content-export'

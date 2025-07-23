@@ -4,7 +4,8 @@
  * Handles content refinement requests through the workflow engine.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
 import { processContentRefinement } from '../../../../lib/refinement-processor'
 import { addIterationFeedback } from '../../../../lib/iteration-manager'
 import { getContentSession } from '../../../../lib/content-session-manager'
