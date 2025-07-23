@@ -27,6 +27,56 @@ interface ContentGenerationLoadingProps {
   estimatedTime?: string
 }
 
+/**
+ * Content generation loading indicator component for AI processing workflows
+ * 
+ * Displays a comprehensive loading state during AI content generation, providing
+ * users with visual feedback about the processing status, progress, and estimated
+ * completion time. This component is specifically designed for AI-powered content
+ * creation scenarios where generation times can vary based on model initialization,
+ * content complexity, and system resources.
+ * 
+ * @component
+ * @param {ContentGenerationLoadingProps} props - Component properties
+ * @param {number} [props.progress] - Optional progress percentage (0-100) for progress bar display
+ * @param {string} [props.status='Generating content...'] - Current status message shown to user
+ * @param {string} [props.estimatedTime] - Optional estimated completion time display
+ * 
+ * @example
+ * ```tsx
+ * // Basic loading state
+ * <ContentGenerationLoading />
+ * 
+ * // With progress and estimated time
+ * <ContentGenerationLoading
+ *   progress={45}
+ *   status="Processing your blog post..."
+ *   estimatedTime="30 seconds"
+ * />
+ * 
+ * // Dynamic status updates during AI generation
+ * <ContentGenerationLoading
+ *   status={isInitializing ? "Initializing AI model..." : "Generating content..."}
+ *   progress={modelLoadProgress}
+ * />
+ * ```
+ * 
+ * @remarks
+ * This component is essential for the Bilan demo user experience because:
+ * - **Transparency**: Shows users that AI processing is actively occurring
+ * - **Expectations**: Provides time estimates to manage user patience
+ * - **Model Loading**: Explains potential delays during first-time model initialization
+ * - **Progress Updates**: Visual progress bar reduces perceived wait time
+ * - **Professional Feel**: Creates a polished loading experience
+ * 
+ * The component integrates with AI content generation workflows by:
+ * - Displaying during Transformers.js model initialization
+ * - Showing progress during content generation API calls
+ * - Providing contextual messaging for different AI processing stages
+ * - Supporting Bilan analytics by clearly defining user wait periods
+ * 
+ * @returns {JSX.Element} Card component with loader, status text, optional progress bar, and guidance text
+ */
 export function ContentGenerationLoading({ 
   progress, 
   status = 'Generating content...', 
