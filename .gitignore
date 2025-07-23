@@ -56,7 +56,7 @@ Thumbs.db
 *~
 
 # WebLLM model cache
-.cache/
+.cache/webllm/
 
 # Analytics data cache
 .bilan-cache/
