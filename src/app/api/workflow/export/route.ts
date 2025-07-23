@@ -12,7 +12,7 @@ import {
   VALID_EXPORT_FORMATS,
   VALID_EXPORT_TEMPLATES
 } from '../../../../lib/content-export'
-import type { ExportFormat, ExportTemplate } from '../../../../lib/content-export'
+import type { ExportFormat, ExportTemplate, ExportMetadata } from '../../../../lib/content-export'
 import { createSessionId } from '../../../../types'
 
 interface ExportRequest {
@@ -31,7 +31,7 @@ interface ExportResponse {
     filename: string
     mimeType: string
     size: number
-    metadata: any
+    metadata: ExportMetadata
   }
   error?: {
     code: string
