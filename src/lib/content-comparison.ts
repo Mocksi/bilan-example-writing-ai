@@ -8,9 +8,9 @@
 import type { 
   ContentIteration, 
   UserFeedback, 
-  ContentType,
+  IterationId, 
   SessionId,
-  IterationId
+  ContentType as _ContentType
 } from '../types'
 import { compareContentIterations, type IterationComparison } from './iteration-manager'
 

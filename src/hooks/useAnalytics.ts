@@ -6,7 +6,14 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { initializeBilan, track, vote, getConfig, isBilanReady, startConversation } from '../lib/bilan'
+import { 
+  initializeBilan, 
+  track, 
+  vote, 
+  getConfig as _getConfig, 
+  isBilanReady, 
+  startConversation 
+} from '../lib/bilan'
 import type { TurnId, UserId, ConversationId } from '../types'
 
 export interface UseAnalyticsReturn {

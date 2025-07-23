@@ -5,7 +5,7 @@
  * content-specific generation capabilities with proper typing and context management.
  */
 
-import { aiClient, type GenerationOptions, type GenerationResponse } from './ai-client'
+import { aiClient, type GenerationOptions, type GenerationResponse as _GenerationResponse } from './ai-client'
 import type { ContentType, SessionId, IterationId } from '../types'
 
 export interface ContentIteration {

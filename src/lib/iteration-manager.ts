@@ -11,7 +11,7 @@ import type {
   ContentType,
   IterationId,
   SessionId,
-  TurnId
+  TurnId as _TurnId
 } from '../types'
 import { generateIterationId, generateTurnId } from '../types'
 
