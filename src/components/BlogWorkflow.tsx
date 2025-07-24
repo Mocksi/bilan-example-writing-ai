@@ -16,10 +16,10 @@ import {
 // import { IconInfoCircle, IconArrowLeft } from '@tabler/icons-react'
 import type { ContentType, SessionId } from '../types'
 import { startJourney, trackJourneyStep, endJourney } from '../lib/bilan'
-import { TopicExplorationStep } from './BlogWorkflow/TopicExplorationStep'
-import { OutlineGenerationStep } from './BlogWorkflow/OutlineGenerationStep'
+import { TopicExplorationStep, type TopicExplorationData } from './BlogWorkflow/TopicExplorationStep'
+import { OutlineGenerationStep, type OutlineGenerationData } from './BlogWorkflow/OutlineGenerationStep'
+import { SectionWritingStep, type SectionWritingData } from './BlogWorkflow/SectionWritingStep'
 // Remaining step components will be created in subsequent commits
-// import { SectionWritingStep } from './BlogWorkflow/SectionWritingStep'
 // import { ReviewPolishStep } from './BlogWorkflow/ReviewPolishStep'
 
 /**
@@ -32,19 +32,9 @@ export interface BlogWorkflowState {
   completedSteps: BlogWorkflowStep[]
   journeyId: string
   sessionId?: SessionId
-  topicData?: {
-    topic: string
-    audience: string
-    keyPoints: string[]
-    tone: string
-  }
-  outlineData?: {
-    outline: string
-    sections: Array<{ title: string; description: string }>
-  }
-  sectionsData?: {
-    sections: Array<{ title: string; content: string; status: 'draft' | 'complete' }>
-  }
+  topicData?: TopicExplorationData
+  outlineData?: OutlineGenerationData
+  sectionsData?: SectionWritingData
   finalContent?: {
     title: string
     content: string
@@ -237,13 +227,12 @@ export function BlogWorkflow({ contentType, onBack, onComplete }: BlogWorkflowPr
         )
       case 'section-writing':
         return (
-          <Stack gap="md">
-            <Title order={3}>Section Writing</Title>
-            <Text c="dimmed">Mixed interaction section writing coming in next commit...</Text>
-            <Button onClick={() => handleStepComplete('section-writing', { sections: [{ title: 'Introduction', content: 'Sample content', status: 'complete' }] })}>
-              Complete Step (Placeholder)
-            </Button>
-          </Stack>
+          <SectionWritingStep
+            journeyId={workflowState.journeyId}
+            topicData={workflowState.topicData}
+            outlineData={workflowState.outlineData}
+            onComplete={(data) => handleStepComplete('section-writing', data)}
+          />
         )
       case 'review-polish':
         return (
