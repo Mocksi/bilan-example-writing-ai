@@ -172,7 +172,7 @@ export async function trackTurn<T>(
       journey_step: metadata?.journey_step,
       
       // AI model information
-      model: metadata?.model || bilanConfig?.mode === 'local' ? 'Llama-3.2-1B-Instruct-q4f32_1-MLC' : 'unknown',
+      model: metadata?.model || (bilanConfig?.mode === 'local' ? 'Llama-3.2-1B-Instruct-q4f32_1-MLC' : 'unknown'),
       provider: 'webllm',
       
       // Performance and context metadata
