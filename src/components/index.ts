@@ -52,6 +52,9 @@ export { SocialWorkflowStep } from './SocialWorkflowStep'
 export { ContentTypeCard } from './ContentTypeCard'
 export { ChatInterface } from './ChatInterface'
 
+// Quick Action Components
+export { QuickActionModal } from './QuickActionModal'
+
 // Status and Indicator Components
 export { AIStatusIndicator } from './AIStatusIndicator'
 
