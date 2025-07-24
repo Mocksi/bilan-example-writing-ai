@@ -20,11 +20,7 @@ const nextConfig: NextConfig = {
     
     return config;
   },
-  
-  // Optimize for WebLLM WASM blob loading
-  experimental: {
-    esmExternals: 'loose',
-  },
+
 };
 
 export default nextConfig;
