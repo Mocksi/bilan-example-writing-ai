@@ -1,5 +1,6 @@
 import { useCopilotAction } from '@copilotkit/react-core'
 import { startJourney } from './bilan'
+import { notifications } from '@mantine/notifications'
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 
 type WorkflowType = 'blog' | 'email' | 'social'
@@ -60,6 +61,16 @@ export const transitionToWorkflow = async (
         context: 'workflow_transition'
       })
       
+      // Show user notification about analytics issue but continue workflow
+      notifications.show({
+        title: 'Analytics Warning',
+        message: `Starting ${workflowType} workflow with limited tracking. Your workflow will work normally.`,
+        color: 'yellow',
+        autoClose: 5000,
+        withCloseButton: true,
+        icon: '⚠️'
+      })
+      
       // Continue with navigation but without journey tracking
       // This allows the workflow to still function even if analytics fail
       const params = new URLSearchParams({
@@ -87,10 +98,39 @@ export const transitionToWorkflow = async (
     // Navigate to workflow with preserved context
     router.push(`/create?${params.toString()}`)
     
+    // Show success notification
+    notifications.show({
+      title: 'Workflow Started',
+      message: `Successfully transitioned to ${workflowType} workflow with full context preserved.`,
+      color: 'green',
+      autoClose: 4000,
+      withCloseButton: true,
+      icon: '✅'
+    })
+    
     // Clear workflow suggestion
     setWorkflowSuggestion(null)
-  } catch (error) {
-    console.error('Failed to transition to workflow:', error)
+  } catch (_error) {
+    // Sanitized error logging for monitoring
+    console.error('Failed to transition to workflow', {
+      timestamp: new Date().toISOString(),
+      errorType: 'workflow_transition_failure',
+      workflowType,
+      context: 'copilot_action_transition'
+    })
+    
+    // Show user-facing error notification
+    notifications.show({
+      title: 'Workflow Transition Failed',
+      message: `Unable to start the ${workflowType} workflow. Please try again or refresh the page.`,
+      color: 'red',
+      autoClose: 8000,
+      withCloseButton: true,
+      icon: '⚠️'
+    })
+    
+    // Clear workflow suggestion since transition failed
+    setWorkflowSuggestion(null)
   }
 }
 
