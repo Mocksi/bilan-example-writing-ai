@@ -523,7 +523,7 @@ Requirements:
 
 Please provide a numbered list of 10 content ideas with brief descriptions.`
 
-    case 'post-creation':
+    case 'post-creation': {
       const ideationData = allStepData['content-ideation'] as IdeationStepData
       return `Create an engaging social media post:
 
@@ -547,6 +547,7 @@ Requirements:
 - Follow ${goalData?.platform} character limits and format
 
 Please write the complete social media post now.`
+    }
 
     case 'hashtag-generation':
       return `Create hashtags and engagement strategy:
