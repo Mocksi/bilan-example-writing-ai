@@ -496,9 +496,10 @@ export async function POST(req: NextRequest) {
             controller.enqueue(encoder.encode('data: [DONE]\n\n'))
             controller.close()
           } catch (error) {
-            console.error('Streaming error:', {
-              message: error instanceof Error ? error.message : 'Unknown streaming error',
-              type: error instanceof Error ? error.constructor.name : 'UnknownError'
+            console.error('Streaming error occurred during content generation', {
+              timestamp: new Date().toISOString(),
+              errorType: 'streaming_error',
+              context: 'AI content generation streaming'
             })
             const errorChunk = `data: ${JSON.stringify({
               error: {
@@ -569,9 +570,11 @@ export async function POST(req: NextRequest) {
       })
     }
   } catch (error) {
-    console.error('CopilotKit API error:', {
-      message: error instanceof Error ? error.message : 'Unknown API error',
-      type: error instanceof Error ? error.constructor.name : 'UnknownError'
+    console.error('CopilotKit API error occurred', {
+      timestamp: new Date().toISOString(),
+      errorType: 'api_error',
+      context: 'CopilotKit request processing',
+      hasUserInput: Boolean(req.body)
     })
     
     // Enhanced error response with helpful debugging info
