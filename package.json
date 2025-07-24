@@ -15,6 +15,9 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "@copilotkit/react-core": "^1.9.3",
+    "@copilotkit/react-ui": "^1.9.3",
+    "@copilotkit/runtime": "^1.9.3",
     "@mantine/core": "^8.2.1",
     "@mantine/form": "^8.2.1",
     "@mantine/hooks": "^8.2.1",
