@@ -108,6 +108,94 @@ export function useQuickActions() {
 
   /**
    * Process quick action through API with comprehensive analytics tracking
+   * 
+   * Executes a standalone AI action by sending user input to the quick action API endpoint,
+   * tracking the entire interaction lifecycle through Bilan analytics, and handling various
+   * error scenarios with robust error classification and tracking. This function represents
+   * the core implementation of standalone turns in the Bilan tracking model.
+   * 
+   * **Analytics Tracking Flow:**
+   * 1. Tracks action initiation when request starts
+   * 2. Tracks successful completion with result metrics
+   * 3. Tracks detailed error information for failures
+   * 4. Prevents duplicate tracking through state management
+   * 
+   * **Error Handling:**
+   * - API errors (4xx/5xx responses) → QuickActionAPIError with status codes
+   * - Network failures (fetch errors) → QuickActionNetworkError 
+   * - Unknown errors → QuickActionError with fallback handling
+   * - All errors include tracking status to prevent duplicate analytics
+   * 
+   * @async
+   * @function processAction
+   * @param {string} actionId - Identifier for the AI action to perform. Must be one of the
+   *   supported action types: 'summarize', 'grammar', 'translate', 'brainstorm'. Each action
+   *   type uses optimized prompts and generation parameters on the server side.
+   * @param {string} input - User-provided text content to process. Should be non-empty and
+   *   within reasonable length limits (varies by action type). Will be sent to the AI model
+   *   through action-specific prompt templates for optimal results.
+   * 
+   * @returns {Promise<QuickActionResult>} Promise resolving to an object containing:
+   *   - `result` {string} - AI-generated text output from the requested action
+   *   - `turnId` {string} - Bilan turn identifier for correlating user feedback and analytics
+   * 
+   * @throws {QuickActionAPIError} When API request fails (4xx/5xx status codes).
+   *   Contains HTTP status code and server error message. Automatically tracked in analytics.
+   * @throws {QuickActionNetworkError} When network request fails (connection issues, timeouts).
+   *   Indicates connectivity problems rather than server errors.
+   * @throws {QuickActionError} For unknown or unexpected errors during processing.
+   *   Serves as fallback error type with generic error code.
+   * 
+   * @example
+   * ```typescript
+   * // Basic usage with error handling
+   * try {
+   *   const result = await processAction('summarize', 'Long text to summarize...')
+   *   console.log('Summary:', result.result)
+   *   console.log('Turn ID for feedback:', result.turnId)
+   * } catch (error) {
+   *   if (error instanceof QuickActionAPIError) {
+   *     // Handle API errors (bad request, server error, etc.)
+   *     console.error(`API Error [${error.statusCode}]:`, error.message)
+   *     if (error.statusCode === 400) {
+   *       // Show validation error to user
+   *     } else if (error.statusCode >= 500) {
+   *       // Show server error message
+   *     }
+   *   } else if (error instanceof QuickActionNetworkError) {
+   *     // Handle network connectivity issues
+   *     console.error('Network Error:', error.message)
+   *     // Show offline/retry message to user
+   *   } else if (error instanceof QuickActionError) {
+   *     // Handle other known errors
+   *     console.error(`Quick Action Error [${error.code}]:`, error.message)
+   *   } else {
+   *     // Handle unexpected errors
+   *     console.error('Unexpected error:', error)
+   *   }
+   * }
+   * ```
+   * 
+   * @example
+   * ```typescript
+   * // Advanced usage with different action types
+   * const actions = [
+   *   { id: 'grammar', text: 'Text with erors to fix' },
+   *   { id: 'translate', text: 'Hello world (translate to Spanish)' },
+   *   { id: 'brainstorm', text: 'Ideas for mobile app features' }
+   * ]
+   * 
+   * for (const action of actions) {
+   *   try {
+   *     const result = await processAction(action.id, action.text)
+   *     // Use result.turnId for immediate feedback collection
+   *     await collectUserFeedback(result.turnId)
+   *   } catch (error) {
+   *     // Handle errors per action type
+   *     handleActionError(action.id, error)
+   *   }
+   * }
+   * ```
    */
   const processAction = async (actionId: string, input: string): Promise<QuickActionResult> => {
     setState(prev => ({ ...prev, isProcessing: true, error: null }))
