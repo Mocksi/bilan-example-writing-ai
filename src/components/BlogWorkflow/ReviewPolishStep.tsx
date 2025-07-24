@@ -21,6 +21,8 @@ import {
   Modal,
   TextInput
 } from '@mantine/core'
+import ReactMarkdown from 'react-markdown'
+import rehypeSanitize from 'rehype-sanitize'
 import { generateContentForType } from '../../lib/ai-client'
 import { trackTurn, vote } from '../../lib/bilan'
 import type { TopicExplorationData } from './TopicExplorationStep'
@@ -251,20 +253,33 @@ ${content.replace(/^# (.*$)/gm, '<h1>$1</h1>')
         <Title order={2} mb="md">{blogTitle}</Title>
         <div 
           style={{ 
-            whiteSpace: 'pre-wrap', 
             lineHeight: 1.6,
             fontSize: '16px'
           }}
-          dangerouslySetInnerHTML={{
-            __html: finalContent
-              .replace(/^## (.*$)/gm, '<h3 style="margin-top: 24px; margin-bottom: 12px; color: #333;">$1</h3>')
-              .replace(/^### (.*$)/gm, '<h4 style="margin-top: 20px; margin-bottom: 8px; color: #555;">$1</h4>')
-              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-              .replace(/\*(.*?)\*/g, '<em>$1</em>')
-              .replace(/\n\n/g, '</p><p style="margin-bottom: 16px;">')
-              .replace(/^(?!<h|<\/p>)(.+)$/gm, '<p style="margin-bottom: 16px;">$1</p>')
-          }}
-        />
+        >
+          <ReactMarkdown
+            rehypePlugins={[rehypeSanitize]}
+            components={{
+              h2: ({ children }) => (
+                <h3 style={{ marginTop: '24px', marginBottom: '12px', color: '#333' }}>
+                  {children}
+                </h3>
+              ),
+              h3: ({ children }) => (
+                <h4 style={{ marginTop: '20px', marginBottom: '8px', color: '#555' }}>
+                  {children}
+                </h4>
+              ),
+              p: ({ children }) => (
+                <p style={{ marginBottom: '16px' }}>
+                  {children}
+                </p>
+              )
+            }}
+          >
+            {finalContent}
+          </ReactMarkdown>
+        </div>
       </Card>
       
       <Card withBorder p="md" bg="gray.0">
