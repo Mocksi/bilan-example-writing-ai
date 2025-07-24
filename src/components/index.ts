@@ -40,11 +40,16 @@
 
 // Layout and Structure Components
 export { AppShell } from './AppShell'
-export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary'
+export { ErrorBoundary } from './ErrorBoundary'
 
-// Content Components  
-export { ContentTypeCard } from './ContentTypeCard'
+// Workflow Components
+export { WorkflowInterface } from './WorkflowInterface'
 export { WorkflowSelector } from './WorkflowSelector'
+export { EmailWorkflowStep } from './EmailWorkflowStep'
+export { SocialWorkflowStep } from './SocialWorkflowStep'
+
+// Content Components
+export { ContentTypeCard } from './ContentTypeCard'
 export { ChatInterface } from './ChatInterface'
 
 // Status and Indicator Components
