@@ -13,20 +13,25 @@ import {
   Alert,
   LoadingOverlay,
   Progress,
-  Badge
+  Badge,
+  Button,
+  Paper
 } from '@mantine/core'
 import {
   IconMessageCircle,
   IconInfoCircle,
   IconBrain,
   IconCheck,
-  IconAlertTriangle
+  IconAlertTriangle,
+  IconArrowRight,
+  IconBulb
 } from '@tabler/icons-react'
 import { 
   startConversation, 
   endConversation, 
   initializeBilan,
-  createUserId
+  createUserId,
+  startJourney
 } from '../lib/bilan'
 import { useRouter } from 'next/navigation'
 
@@ -40,6 +45,7 @@ import { useRouter } from 'next/navigation'
  * - Managing conversation lifecycle with proper cleanup
  * - Providing custom actions for workflow transitions and content tools
  * - Real-time progress tracking for model initialization and streaming
+ * - Intelligent workflow detection and smooth context transitions
  * 
  * @component
  * @returns {JSX.Element} Full-featured chat interface with analytics tracking
@@ -52,6 +58,12 @@ export function ChatInterface() {
   const [modelProgress, setModelProgress] = useState<number>(0)
   const [modelStatus, setModelStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const [statusMessage, setStatusMessage] = useState<string>('')
+  const [workflowSuggestion, setWorkflowSuggestion] = useState<{
+    type: 'blog' | 'email' | 'social'
+    reason: string
+    context: string
+    confidence: number
+  } | null>(null)
   const router = useRouter()
 
   // Check AI model status and initialization progress
@@ -83,10 +95,115 @@ export function ChatInterface() {
         setModelProgress(100)
         setStatusMessage('AI model ready')
       }
-          } catch (_error) {
-        setModelStatus('error')
-        setStatusMessage('Failed to check model status')
+    } catch (error) {
+      setModelStatus('error')
+      setStatusMessage(`Failed to check model status: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  // Intelligent workflow detection based on user input
+  const detectWorkflowOpportunity = (message: string): {
+    type: 'blog' | 'email' | 'social'
+    reason: string
+    context: string
+    confidence: number
+  } | null => {
+    const lowerMessage = message.toLowerCase()
+    
+    // Blog detection patterns
+    const blogPatterns = [
+      'write a blog', 'blog post', 'article about', 'tutorial on', 
+      'guide to', 'how to', 'step by step', 'comprehensive overview',
+      'deep dive', 'analysis of', 'case study', 'review of'
+    ]
+    
+    // Email detection patterns  
+    const emailPatterns = [
+      'write an email', 'email to', 'professional email', 'send email',
+      'follow up email', 'announcement email', 'newsletter', 'outreach',
+      'client email', 'team update', 'business email'
+    ]
+    
+    // Social media detection patterns
+    const socialPatterns = [
+      'social media post', 'tweet', 'linkedin post', 'instagram caption',
+      'facebook post', 'social content', 'viral post', 'engagement post',
+      'announcement post', 'behind the scenes'
+    ]
+
+    // Check for blog opportunities
+    for (const pattern of blogPatterns) {
+      if (lowerMessage.includes(pattern)) {
+        return {
+          type: 'blog',
+          reason: `Detected request for long-form content: "${pattern}"`,
+          context: message,
+          confidence: 0.85
+        }
       }
+    }
+
+    // Check for email opportunities
+    for (const pattern of emailPatterns) {
+      if (lowerMessage.includes(pattern)) {
+        return {
+          type: 'email',
+          reason: `Detected email communication need: "${pattern}"`,
+          context: message,
+          confidence: 0.9
+        }
+      }
+    }
+
+    // Check for social media opportunities
+    for (const pattern of socialPatterns) {
+      if (lowerMessage.includes(pattern)) {
+        return {
+          type: 'social',
+          reason: `Detected social media content request: "${pattern}"`,
+          context: message,
+          confidence: 0.8
+        }
+      }
+    }
+
+    return null
+  }
+
+  // Enhanced workflow transition with context preservation
+  const transitionToWorkflow = async (
+    workflowType: 'blog' | 'email' | 'social',
+    context: string,
+    preserveConversation = true
+  ) => {
+    try {
+      // Start journey tracking for workflow transition
+      const journeyId = await startJourney(`${workflowType}-creation` as any, {
+        topic: context,
+        userBrief: context,
+        contentType: workflowType,
+        initialConversationId: preserveConversation ? conversationId : undefined,
+        transitionSource: 'chat-interface',
+        transitionReason: workflowSuggestion?.reason
+      })
+
+      // Prepare URL parameters with context
+      const params = new URLSearchParams({
+        type: workflowType,
+        context: context.substring(0, 500), // Limit context length for URL
+        fromChat: 'true',
+        journeyId,
+        ...(conversationId && preserveConversation && { conversationId })
+      })
+
+      // Navigate to workflow with preserved context
+      router.push(`/create?${params.toString()}`)
+      
+      // Clear workflow suggestion
+      setWorkflowSuggestion(null)
+    } catch (error) {
+      console.error('Failed to transition to workflow:', error)
+    }
   }
 
   // Custom CopilotKit Actions for Content Creation Tools
@@ -108,14 +225,8 @@ export function ChatInterface() {
       }
     ],
     handler: async ({ topic, audience }) => {
-      // Navigate to blog workflow with topic pre-filled
-      const params = new URLSearchParams({
-        type: 'blog',
-        topic: topic || '',
-        ...(audience && { audience })
-      })
-      router.push(`/create?${params.toString()}`)
-      return `Starting blog workflow for "${topic}". Redirecting to structured creation process...`
+      await transitionToWorkflow('blog', `Topic: ${topic}${audience ? ` | Audience: ${audience}` : ''}`)
+      return `Starting blog workflow for "${topic}". Redirecting to structured creation process with chat context preserved...`
     }
   })
 
@@ -137,13 +248,8 @@ export function ChatInterface() {
       }
     ],
     handler: async ({ purpose, recipient }) => {
-      const params = new URLSearchParams({
-        type: 'email',
-        purpose: purpose || '',
-        ...(recipient && { recipient })
-      })
-      router.push(`/create?${params.toString()}`)
-      return `Starting email workflow for "${purpose}". Redirecting to structured creation process...`
+      await transitionToWorkflow('email', `Purpose: ${purpose}${recipient ? ` | Recipient: ${recipient}` : ''}`)
+      return `Starting email workflow for "${purpose}". Redirecting to structured creation process with chat context preserved...`
     }
   })
 
@@ -165,13 +271,8 @@ export function ChatInterface() {
       }
     ],
     handler: async ({ platform, goal }) => {
-      const params = new URLSearchParams({
-        type: 'social',
-        goal: goal || '',
-        ...(platform && { platform })
-      })
-      router.push(`/create?${params.toString()}`)
-      return `Starting social media workflow for ${platform ? `${platform} ` : ''}with goal: "${goal}". Redirecting to structured creation process...`
+      await transitionToWorkflow('social', `Goal: ${goal}${platform ? ` | Platform: ${platform}` : ''}`)
+      return `Starting social media workflow for ${platform ? `${platform} ` : ''}with goal: "${goal}". Redirecting to structured creation process with chat context preserved...`
     }
   })
 
@@ -398,7 +499,7 @@ I'll help you improve this text. Let me analyze it and provide suggestions for b
                   </Badge>
                 </Group>
                 <Text size="sm" c="dimmed">
-                  Powered by WebLLM • Analytics by Bilan • Enhanced with Actions
+                  Powered by WebLLM • Analytics by Bilan • Smart Workflow Detection
                 </Text>
                 {modelStatus === 'loading' && (
                   <div style={{ marginTop: 4 }}>
@@ -411,29 +512,68 @@ I'll help you improve this text. Let me analyze it and provide suggestions for b
               </div>
             </Group>
 
+            {/* Workflow Suggestion Banner */}
+            {workflowSuggestion && (
+              <Paper p="sm" bg="blue.0" style={{ borderBottom: '1px solid #e9ecef' }}>
+                <Group gap="sm" justify="space-between" align="center">
+                  <Group gap="sm" align="center">
+                    <ThemeIcon size="sm" color="blue" variant="light">
+                      <IconBulb size={14} />
+                    </ThemeIcon>
+                    <div>
+                      <Text size="sm" fw={500}>
+                        Workflow Suggestion
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {workflowSuggestion.reason} (Confidence: {Math.round(workflowSuggestion.confidence * 100)}%)
+                      </Text>
+                    </div>
+                  </Group>
+                  <Group gap="xs">
+                    <Button
+                      size="xs"
+                      variant="filled"
+                      rightSection={<IconArrowRight size={12} />}
+                      onClick={() => transitionToWorkflow(workflowSuggestion.type, workflowSuggestion.context)}
+                    >
+                      Start {workflowSuggestion.type} workflow
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="subtle"
+                      onClick={() => setWorkflowSuggestion(null)}
+                    >
+                      Dismiss
+                    </Button>
+                  </Group>
+                </Group>
+              </Paper>
+            )}
+
             {/* CopilotChat Component with Enhanced Instructions */}
             <div style={{ flex: 1, minHeight: 0 }}>
               <CopilotChat
                 labels={{
                   title: "AI Writing Assistant",
-                  initial: `Hello! I'm your AI writing assistant with enhanced content creation tools. 
+                  initial: `Hello! I'm your AI writing assistant with smart workflow detection and enhanced content creation tools. 
 
 **I can help you with:**
-🚀 **Workflows**: Start structured creation for blogs, emails, or social media
+🚀 **Smart Workflows**: I'll detect when you need structured creation and suggest workflows
 📝 **Content Tools**: Improve text, generate outlines, analyze content  
 💡 **Quick Actions**: Use @ to access tools like @startBlogWorkflow, @improveText, @generateOutline
+🔄 **Seamless Transitions**: Move between chat and workflows while preserving context
 
 **Try asking:**
-- "Help me start a blog about AI trends" (I'll suggest the blog workflow)
+- "Help me write a blog post about AI trends" (I'll detect this and suggest the blog workflow)
+- "I need to send a follow-up email to clients" (I'll suggest the email workflow)
+- "Create a LinkedIn post about our new product" (I'll suggest the social workflow)
 - "Improve this text: [paste your text]" 
-- "Generate an outline for a presentation on productivity"
-- "Analyze this email for tone and clarity"
 
 What would you like to work on today?`,
-                  placeholder: "Ask me anything or use @ to access content creation tools...",
+                  placeholder: "Ask me anything or describe what you want to create...",
                   stopGenerating: "Stop generating"
                 }}
-                instructions={`You are an AI writing assistant with enhanced capabilities through custom actions. Your primary role is to help users with content creation, editing, and improvement.
+                instructions={`You are an AI writing assistant with intelligent workflow detection and enhanced capabilities through custom actions. Your primary role is to help users with content creation while smartly suggesting appropriate workflows.
 
 **Available Actions:**
 - startBlogWorkflow: For structured blog post creation
@@ -443,15 +583,21 @@ What would you like to work on today?`,
 - generateOutline: To create content outlines
 - analyzeContent: To analyze and improve content
 
-**Guidelines:**
-1. When users want to create specific content types (blogs, emails, social posts), suggest the relevant workflow
-2. For quick improvements or analysis, use the direct tools
-3. Always explain what each action does before using it
-4. Be conversational and helpful
-5. Track that users can switch between chat and structured workflows
-6. Encourage exploration of both chat assistance and workflow-based creation
+**Smart Workflow Detection Guidelines:**
+1. Listen for content creation needs and suggest appropriate workflows
+2. When users mention "blog", "article", "tutorial", "guide" → suggest blog workflow
+3. When users mention "email", "follow-up", "announcement" → suggest email workflow  
+4. When users mention "social media", "post", "Twitter", "LinkedIn" → suggest social workflow
+5. For quick tasks, use the direct tools
+6. Always explain the benefits of using structured workflows vs. chat
+7. Preserve conversation context when transitioning to workflows
 
-Remember: You have access to powerful actions - suggest them when appropriate!`}
+**Response Pattern:**
+- For workflow opportunities: "I can help you with that! For structured, step-by-step creation, I'd recommend using our [type] workflow. Would you like me to start that process?"
+- For quick tasks: Use the appropriate action directly
+- Always be conversational and explain your reasoning
+
+Remember: You can detect workflow needs and suggest smooth transitions while preserving context!`}
                 onInProgress={(inProgress) => {
                   // Update progress indicator when AI is generating
                   if (inProgress) {
@@ -460,9 +606,13 @@ Remember: You have access to powerful actions - suggest them when appropriate!`}
                     setStatusMessage('AI model ready')
                   }
                 }}
-                onSubmitMessage={async (_message: string) => {
-                  // This fires when user sends a message
-                  // Turn tracking will be implemented in next commit
+                onSubmitMessage={async (message: string) => {
+                  // Detect workflow opportunities in user input
+                  const workflowOpp = detectWorkflowOpportunity(message)
+                  if (workflowOpp && workflowOpp.confidence > 0.7) {
+                    setWorkflowSuggestion(workflowOpp)
+                  }
+                  
                   setStatusMessage('Processing request...')
                 }}
                 // Note: Voting integration will be implemented in next commit
