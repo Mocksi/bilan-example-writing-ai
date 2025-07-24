@@ -166,27 +166,11 @@ export function BlogWorkflow({ contentType, onBack, onComplete }: BlogWorkflowPr
 
   const handleWorkflowComplete = async (reviewData?: ReviewPolishData) => {
     try {
-      // Convert user satisfaction to numeric score for Bilan SDK
-      const convertSatisfactionToScore = (satisfaction: 'high' | 'medium' | 'low'): number => {
-        switch (satisfaction) {
-          case 'high': return 0.9    // Very satisfied
-          case 'medium': return 0.6  // Somewhat satisfied  
-          case 'low': return 0.3     // Needs improvement
-          default: return 0.6        // Default to medium
-        }
-      }
-
-      const satisfactionScore = reviewData 
-        ? convertSatisfactionToScore(reviewData.satisfaction)
-        : 0.6 // Default if no review data
-
       if (workflowState.journeyId) {
         await endJourney(workflowState.journeyId, 'completed', {
           finalOutput: reviewData?.finalContent,
-          satisfactionScore,
-          completionTime: Date.now(),
-          finalTitle: reviewData?.finalTitle,
-          totalWordCount: reviewData?.totalWordCount
+          satisfactionScore: reviewData?.satisfaction === 'high' ? 1 : 0, // Simple: satisfied or not
+          completionTime: Date.now()
         })
       }
 
