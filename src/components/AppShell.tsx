@@ -162,14 +162,32 @@ export function AppShell({ children }: AppShellProps) {
    * and tracks it as a standalone turn in Bilan analytics.
    */
   const handleQuickActionSubmit = async (actionId: string, input: string) => {
-    // TODO: Implement API call to process quick action
-    // This will be implemented in commit 2
-    console.log('Processing quick action:', actionId, input)
-    
-    // Placeholder response for UI testing
-    return {
-      result: `Processed "${actionId}" action for input: ${input.substring(0, 50)}...`,
-      turnId: `turn_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    try {
+      const response = await fetch('/api/ai/quick-action', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: actionId,
+          input: input,
+          userId: 'demo-user' // TODO: Use actual user ID from auth context
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to process quick action')
+      }
+
+      const data = await response.json()
+      return {
+        result: data.result,
+        turnId: data.turnId
+      }
+    } catch (error) {
+      console.error('Quick action submission failed:', error)
+      throw error
     }
   }
 
