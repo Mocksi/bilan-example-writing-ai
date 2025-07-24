@@ -19,7 +19,7 @@ import { startJourney, trackJourneyStep, endJourney } from '../lib/bilan'
 import { TopicExplorationStep, type TopicExplorationData } from './BlogWorkflow/TopicExplorationStep'
 import { OutlineGenerationStep, type OutlineGenerationData } from './BlogWorkflow/OutlineGenerationStep'
 import { SectionWritingStep, type SectionWritingData } from './BlogWorkflow/SectionWritingStep'
-import { ReviewPolishStep } from './BlogWorkflow/ReviewPolishStep'
+import { ReviewPolishStep, type ReviewPolishData } from './BlogWorkflow/ReviewPolishStep'
 
 /**
  * Blog workflow step definitions following the implementation plan
@@ -34,11 +34,7 @@ export interface BlogWorkflowState {
   topicData?: TopicExplorationData
   outlineData?: OutlineGenerationData
   sectionsData?: SectionWritingData
-  finalContent?: {
-    title: string
-    content: string
-    wordCount: number
-  }
+  reviewData?: ReviewPolishData
 }
 
 export interface BlogWorkflowProps {
@@ -150,7 +146,7 @@ export function BlogWorkflow({ contentType, onBack, onComplete }: BlogWorkflowPr
             updatedState.sectionsData = data as SectionWritingData
             break
           case 'review-polish':
-            // Review step doesn't store data, just completes the workflow
+            updatedState.reviewData = data as ReviewPolishData
             break
         }
 
@@ -168,12 +164,29 @@ export function BlogWorkflow({ contentType, onBack, onComplete }: BlogWorkflowPr
     }
   }
 
-  const handleWorkflowComplete = async () => {
+  const handleWorkflowComplete = async (reviewData?: ReviewPolishData) => {
     try {
+      // Convert user satisfaction to numeric score for Bilan SDK
+      const convertSatisfactionToScore = (satisfaction: 'high' | 'medium' | 'low'): number => {
+        switch (satisfaction) {
+          case 'high': return 0.9    // Very satisfied
+          case 'medium': return 0.6  // Somewhat satisfied  
+          case 'low': return 0.3     // Needs improvement
+          default: return 0.6        // Default to medium
+        }
+      }
+
+      const satisfactionScore = reviewData 
+        ? convertSatisfactionToScore(reviewData.satisfaction)
+        : 0.6 // Default if no review data
+
       if (workflowState.journeyId) {
         await endJourney(workflowState.journeyId, 'completed', {
-          finalOutput: workflowState.finalContent?.content,
-          satisfactionScore: 1 // Assuming successful completion
+          finalOutput: reviewData?.finalContent,
+          satisfactionScore,
+          completionTime: Date.now(),
+          finalTitle: reviewData?.finalTitle,
+          totalWordCount: reviewData?.totalWordCount
         })
       }
 
@@ -259,7 +272,7 @@ export function BlogWorkflow({ contentType, onBack, onComplete }: BlogWorkflowPr
             topicData={workflowState.topicData}
             outlineData={workflowState.outlineData}
             sectionsData={workflowState.sectionsData}
-            onComplete={handleWorkflowComplete}
+            onComplete={(data) => handleWorkflowComplete(data)}
           />
         )
       case 'completed':

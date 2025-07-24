@@ -41,7 +41,7 @@ export interface ReviewPolishStepProps {
   topicData?: TopicExplorationData
   outlineData?: OutlineGenerationData
   sectionsData?: SectionWritingData
-  onComplete: () => void
+  onComplete: (data: ReviewPolishData) => void
 }
 
 type ReviewTab = 'preview' | 'edit' | 'export'
@@ -416,10 +416,29 @@ ${content.replace(/^# (.*$)/gm, '<h1>$1</h1>')
         }
       )
 
-      onComplete()
+      // Pass the review data including satisfaction to parent
+      const reviewData: ReviewPolishData = {
+        finalTitle: blogTitle,
+        finalContent,
+        totalWordCount: getTotalWordCount(),
+        completedAt: Date.now(),
+        exportFormats: ['markdown', 'html', 'plain'],
+        satisfaction
+      }
+
+      onComplete(reviewData)
     } catch (error) {
       console.error('Failed to complete workflow:', error)
-      onComplete() // Complete anyway
+      // Still pass data even if tracking fails
+      const reviewData: ReviewPolishData = {
+        finalTitle: blogTitle,
+        finalContent,
+        totalWordCount: getTotalWordCount(),
+        completedAt: Date.now(),
+        exportFormats: ['markdown', 'html', 'plain'],
+        satisfaction
+      }
+      onComplete(reviewData)
     }
   }
 
