@@ -188,16 +188,23 @@ Keep your response conversational, encouraging, and focused on helping them deve
         .map(msg => msg.content)
         .join(' ')
 
-      const extractionPrompt = `Based on this conversation about a blog topic, extract the following information:
+      const extractionPrompt = `Based on this conversation about a blog topic, extract the following information and respond with ONLY a valid JSON object:
 
 Conversation: ${conversationText}
 
-Please respond in this format:
-TOPIC: [the main blog topic/title if clear]
-AUDIENCE: [target audience if mentioned]  
-KEY_POINTS: [comma-separated list of 3-5 key points or subtopics]
+Analyze the conversation and extract:
+- topic: The main blog topic or title (string, or null if unclear)
+- audience: The target audience (string, or null if not mentioned)
+- keyPoints: Array of 3-5 key points or subtopics (array of strings, or empty array if none identified)
 
-If any information is not clear from the conversation, respond with "UNCLEAR" for that field.`
+Respond with ONLY a JSON object in this exact format:
+{
+  "topic": "extracted topic or null",
+  "audience": "target audience or null", 
+  "keyPoints": ["point 1", "point 2", "point 3"]
+}
+
+Do not include any explanation or additional text - only the JSON object.`
 
       const { result } = await trackTurn(
         'Extract topic insights',
@@ -211,31 +218,71 @@ If any information is not clear from the conversation, respond with "UNCLEAR" fo
         }
       )
 
-      // Parse the extraction results
-      const lines = result.text.split('\n')
-      lines.forEach(line => {
-        if (line.startsWith('TOPIC:') && !line.includes('UNCLEAR')) {
-          const extractedTopic = line.replace('TOPIC:', '').trim()
-          if (extractedTopic && !topic) {
-            setTopic(extractedTopic)
+      // Parse the JSON response safely
+      try {
+        // Clean the response text by removing any potential markdown code blocks or extra whitespace
+        const cleanedResponse = result.text
+          .replace(/```json\s*/g, '')
+          .replace(/```\s*/g, '')
+          .trim()
+
+        const insights = JSON.parse(cleanedResponse)
+
+        // Validate the JSON structure and extract insights
+        if (insights && typeof insights === 'object') {
+          // Extract topic if present and valid
+          if (insights.topic && typeof insights.topic === 'string' && insights.topic.toLowerCase() !== 'null' && !topic) {
+            setTopic(insights.topic.trim())
+          }
+
+          // Extract audience if present and valid
+          if (insights.audience && typeof insights.audience === 'string' && insights.audience.toLowerCase() !== 'null' && !audience) {
+            setAudience(insights.audience.trim())
+          }
+
+          // Extract key points if present and valid
+          if (Array.isArray(insights.keyPoints) && insights.keyPoints.length > 0) {
+            const validKeyPoints = insights.keyPoints
+              .filter((point: unknown): point is string => typeof point === 'string' && point.trim().length > 0)
+              .map((point: string) => point.trim())
+            
+            if (validKeyPoints.length > 0) {
+              setSuggestedKeyPoints(validKeyPoints)
+            }
           }
         }
-        if (line.startsWith('AUDIENCE:') && !line.includes('UNCLEAR')) {
-          const extractedAudience = line.replace('AUDIENCE:', '').trim()
-          if (extractedAudience && !audience) {
-            setAudience(extractedAudience)
+      } catch (jsonError) {
+        console.warn('Failed to parse JSON from AI response, falling back to text parsing:', jsonError instanceof Error ? jsonError.message : 'Unknown JSON error')
+        
+        // Fallback to original string parsing if JSON parsing fails
+        const lines = result.text.split('\n')
+        lines.forEach(line => {
+          if (line.includes('topic') && !line.toLowerCase().includes('null') && !topic) {
+            const match = line.match(/"topic":\s*"([^"]+)"/i)
+            if (match && match[1]) {
+              setTopic(match[1].trim())
+            }
           }
-        }
-        if (line.startsWith('KEY_POINTS:') && !line.includes('UNCLEAR')) {
-          const points = line.replace('KEY_POINTS:', '').trim()
-            .split(',')
-            .map(p => p.trim())
-            .filter(p => p.length > 0)
-          if (points.length > 0) {
-            setSuggestedKeyPoints(points)
+          if (line.includes('audience') && !line.toLowerCase().includes('null') && !audience) {
+            const match = line.match(/"audience":\s*"([^"]+)"/i)
+            if (match && match[1]) {
+              setAudience(match[1].trim())
+            }
           }
-        }
-      })
+          if (line.includes('keyPoints') && line.includes('[')) {
+            const match = line.match(/"keyPoints":\s*\[([^\]]+)\]/i)
+            if (match && match[1]) {
+              const points = match[1]
+                .split(',')
+                .map(p => p.replace(/"/g, '').trim())
+                .filter(p => p.length > 0)
+              if (points.length > 0) {
+                setSuggestedKeyPoints(points)
+              }
+            }
+          }
+        })
+      }
 
       // Show refinement form if we have some insights
       if (conversationMessages.length >= 4) {
@@ -243,7 +290,7 @@ If any information is not clear from the conversation, respond with "UNCLEAR" fo
       }
 
     } catch (error) {
-      console.error('Failed to extract topic insights:', error)
+      console.error('Failed to extract topic insights:', error instanceof Error ? error.message : 'Unknown error')
     }
   }
 
