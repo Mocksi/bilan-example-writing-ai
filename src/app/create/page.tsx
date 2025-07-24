@@ -4,7 +4,7 @@ import { Container, Title, Text, Card, Button, Group, Skeleton } from '@mantine/
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 import type { ContentType } from '../../types'
-import { WorkflowInterface } from '../../components'
+import { BlogWorkflow, WorkflowInterface } from '../../components'
 
 /**
  * Content creation page component that renders the main interface for AI-powered content generation.
@@ -14,31 +14,38 @@ import { WorkflowInterface } from '../../components'
  * - Rendering the appropriate workflow interface based on content type (blog, email, social)
  * - Providing error handling for invalid or missing content type parameters
  * - Managing navigation back to the home page
- * - Integrating with the WorkflowInterface for step-by-step content creation
+ * - Integrating with specialized workflows for different content types
  * 
  * **Query Parameter Validation:**
  * - Expects a `type` query parameter with values: 'blog', 'email', or 'social'
  * - Renders an error state with navigation options if the parameter is invalid or missing
  * - Uses TypeScript type safety with the ContentType union type for validation
  * 
+ * **Workflow Selection Logic:**
+ * - Blog content type: Uses specialized BlogWorkflow component with comprehensive step-by-step process
+ * - Email content type: Uses generic WorkflowInterface with email-specific workflow steps
+ * - Social content type: Uses generic WorkflowInterface with social media workflow steps
+ * 
  * **UI Rendering Logic:**
- * - Success state: Shows WorkflowInterface for the selected content type
+ * - Success state: Shows appropriate workflow interface for the selected content type
  * - Error state: Displays user-friendly error message with back navigation
  * - Consistent Mantine UI components for styling and responsive design
  * - Navigation buttons use Next.js App Router for client-side routing
  * 
  * **Integration Points:**
- * - Connected to WorkflowInterface for complete workflow orchestration
- * - Integrated with Bilan analytics through WorkflowInterface
+ * - Connected to BlogWorkflow for comprehensive blog creation process
+ * - Connected to WorkflowInterface for email and social media workflows
+ * - Integrated with Bilan analytics through both workflow systems
  * - Handles workflow completion and cancellation callbacks
  * 
  * @returns {JSX.Element} The rendered content creation page with either:
- *   - WorkflowInterface for valid content types
+ *   - BlogWorkflow for blog content type
+ *   - WorkflowInterface for email and social content types
  *   - Error state with navigation options (if invalid/missing content type)
  * 
  * @example
  * // Accessed via navigation from home page:
- * // /create?type=blog -> Renders blog workflow interface
+ * // /create?type=blog -> Renders specialized blog workflow interface
  * // /create?type=email -> Renders email workflow interface  
  * // /create?type=social -> Renders social media workflow interface
  * // /create -> Renders error state (missing type parameter)
@@ -78,6 +85,24 @@ function CreatePageContent() {
     )
   }
 
+  // Render the appropriate workflow based on content type
+  if (contentType === 'blog') {
+    return (
+      <Container size="xl" py="xl">
+        <BlogWorkflow 
+          contentType={contentType}
+          onBack={handleGoBack}
+          onComplete={(result) => {
+            console.log('Blog workflow completed:', result)
+            // Navigate to home with success message
+            router.push('/?success=blog-completed')
+          }}
+        />
+      </Container>
+    )
+  }
+
+  // Use WorkflowInterface for email and social content types
   return (
     <WorkflowInterface
       contentType={contentType}

@@ -51,6 +51,7 @@ export { SocialWorkflowStep } from './SocialWorkflowStep'
 // Content Components
 export { ContentTypeCard } from './ContentTypeCard'
 export { ChatInterface } from './ChatInterface'
+export { BlogWorkflow } from './BlogWorkflow'
 
 // Quick Action Components
 export { QuickActionModal } from './QuickActionModal'
