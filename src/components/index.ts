@@ -46,6 +46,7 @@ export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary'
 export { ContentTypeCard } from './ContentTypeCard'
 export { WorkflowSelector } from './WorkflowSelector'
 export { ChatInterface } from './ChatInterface'
+export { BlogWorkflow } from './BlogWorkflow'
 
 // Status and Indicator Components
 export { AIStatusIndicator } from './AIStatusIndicator'

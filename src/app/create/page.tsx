@@ -4,6 +4,7 @@ import { Container, Title, Text, Card, Button, Group, Skeleton } from '@mantine/
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 import type { ContentType } from '../../types'
+import { BlogWorkflow } from '../../components'
 
 /**
  * Content creation page component that renders the main interface for AI-powered content generation.
@@ -74,6 +75,23 @@ function CreatePageContent() {
     social: 'Social Media Post'
   }
 
+  // Render the appropriate workflow based on content type
+  if (contentType === 'blog') {
+    return (
+      <Container size="xl" py="xl">
+        <BlogWorkflow 
+          contentType={contentType}
+          onBack={handleGoBack}
+          onComplete={(result) => {
+            console.log('Blog workflow completed:', result)
+            // Could navigate to a results page or show success message
+          }}
+        />
+      </Container>
+    )
+  }
+
+  // Placeholder for other content types (email, social)
   return (
     <Container size="xl" py="xl">
       <Card withBorder p="xl">
@@ -89,11 +107,11 @@ function CreatePageContent() {
 
         <Card withBorder p="lg" bg="gray.0">
           <Text size="lg" fw={500} mb="md">
-            🚧 Content Creator Coming Soon
+            🚧 {contentTypeLabels[contentType]} Workflow Coming Soon
           </Text>
           <Text c="dimmed">
-            This will be the content creator interface for {contentTypeLabels[contentType].toLowerCase()} generation.
-            The navigation system is now working with Next.js App Router!
+            The {contentTypeLabels[contentType].toLowerCase()} creation workflow will be implemented in a future iteration.
+            Currently implementing the blog workflow first as outlined in the implementation plan.
           </Text>
           <Text size="sm" c="dimmed" mt="md">
             Selected content type: <strong>{contentType}</strong>
