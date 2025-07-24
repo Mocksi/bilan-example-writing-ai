@@ -157,22 +157,22 @@ function MessageBubble({
           
           {isAI && !message.isStreaming && onVote && (
             <Group gap="xs">
-                             <ActionIcon
-                 size="sm"
-                 variant={message.vote === 1 ? 'filled' : 'subtle'}
-                 color={message.vote === 1 ? 'blue' : 'gray'}
-                 onClick={() => onVote(message.id, 1)}
-               >
-                 <IconThumbUp size={12} />
-               </ActionIcon>
-               <ActionIcon
-                 size="sm"
-                 variant={message.vote === -1 ? 'filled' : 'subtle'}
-                 color={message.vote === -1 ? 'red' : 'gray'}
-                 onClick={() => onVote(message.id, -1)}
-               >
-                 <IconThumbDown size={12} />
-               </ActionIcon>
+              <ActionIcon
+                size="sm"
+                variant={message.vote === 1 ? 'filled' : 'subtle'}
+                color={message.vote === 1 ? 'blue' : 'gray'}
+                onClick={() => onVote(message.id, 1)}
+              >
+                <IconThumbUp size={12} />
+              </ActionIcon>
+              <ActionIcon
+                size="sm"
+                variant={message.vote === -1 ? 'filled' : 'subtle'}
+                color={message.vote === -1 ? 'red' : 'gray'}
+                onClick={() => onVote(message.id, -1)}
+              >
+                <IconThumbDown size={12} />
+              </ActionIcon>
             </Group>
           )}
         </Group>
@@ -360,7 +360,7 @@ export function ChatInterface({
     }
   }
 
-  const handleKeyPress = (event: React.KeyboardEvent) => {
+  const handleKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault()
       handleSend()
