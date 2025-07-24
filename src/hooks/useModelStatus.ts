@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 
 type ModelStatus = 'idle' | 'loading' | 'ready' | 'error'
 
@@ -6,7 +6,8 @@ type ModelStatus = 'idle' | 'loading' | 'ready' | 'error'
  * Custom hook for managing AI model status and initialization progress
  * 
  * Handles model status checking, progress tracking, and provides real-time updates
- * during model initialization. Includes automatic retry logic for model loading.
+ * during model initialization. Includes automatic retry logic for model loading with
+ * proper cleanup to prevent memory leaks and state updates after unmount.
  * 
  * @returns Object containing model status state and control functions
  */
@@ -14,8 +15,17 @@ export function useModelStatus() {
   const [modelProgress, setModelProgress] = useState<number>(0)
   const [modelStatus, setModelStatus] = useState<ModelStatus>('idle')
   const [statusMessage, setStatusMessage] = useState<string>('')
+  
+  // Track component mount state and timeout ID for cleanup
+  const isMountedRef = useRef(true)
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null)
 
   const checkModelStatus = useCallback(async () => {
+    // Only proceed if component is still mounted
+    if (!isMountedRef.current) {
+      return
+    }
+
     try {
       const response = await fetch('/api/copilot-kit', {
         method: 'POST',
@@ -28,13 +38,20 @@ export function useModelStatus() {
 
       const data = await response.json()
       
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) {
+        return
+      }
+      
       if (data.status === 'initializing') {
         setModelStatus('loading')
         setModelProgress(data.progress || 0)
         setStatusMessage(data.message || 'Loading AI model...')
         
-        // Continue checking until ready
-        setTimeout(checkModelStatus, 1000)
+        // Schedule next check only if component is still mounted
+        if (isMountedRef.current) {
+          timeoutIdRef.current = setTimeout(checkModelStatus, 1000)
+        }
       } else if (data.error) {
         setModelStatus('error')
         setStatusMessage(data.error.message || 'Model initialization failed')
@@ -44,12 +61,23 @@ export function useModelStatus() {
         setStatusMessage('AI model ready')
       }
     } catch (error) {
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) {
+        return
+      }
+      
       setModelStatus('error')
       setStatusMessage(`Failed to check model status: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }, [])
 
   const resetModelStatus = useCallback(() => {
+    // Clear any pending timeout
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current)
+      timeoutIdRef.current = null
+    }
+    
     setModelStatus('idle')
     setModelProgress(0)
     setStatusMessage('')
@@ -62,12 +90,30 @@ export function useModelStatus() {
     }
   }, [])
 
+  const cleanup = useCallback(() => {
+    isMountedRef.current = false
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current)
+      timeoutIdRef.current = null
+    }
+  }, [])
+
+  // Cleanup effect to prevent memory leaks
+  useEffect(() => {
+    isMountedRef.current = true
+    
+    return () => {
+      cleanup()
+    }
+  }, [cleanup])
+
   return {
     modelProgress,
     modelStatus,
     statusMessage,
     checkModelStatus,
     resetModelStatus,
-    setModelStatus: setModelStatusManually
+    setModelStatus: setModelStatusManually,
+    cleanup // Export cleanup function for manual cleanup if needed
   }
 } 
