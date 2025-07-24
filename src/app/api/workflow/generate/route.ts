@@ -4,12 +4,14 @@
  * Handles content generation requests through the workflow engine.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
 import { generateContentForType } from '../../../../lib/ai-client'
 import { createContentSession, addContentIteration, getContentSession } from '../../../../lib/content-session-manager'
 import { createIteration } from '../../../../lib/iteration-manager'
 import type { ContentType, SessionId } from '../../../../types'
 import { createSessionId } from '../../../../types'
+import type { ApiErrorDetails } from '../../../../types/lint-types'
 
 export interface GenerateContentRequest {
   contentType: ContentType
@@ -39,7 +41,7 @@ export interface GenerateContentResponse {
   error?: {
     code: string
     message: string
-    details?: any
+    details?: ApiErrorDetails
   }
 }
 
@@ -151,7 +153,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateC
       error: {
         code: 'GENERATION_FAILED',
         message: error instanceof Error ? error.message : 'Content generation failed',
-        details: process.env.NODE_ENV === 'development' ? error : undefined
+        details: process.env.NODE_ENV === 'development' ? {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        } : undefined
       }
     }, { status: 500 })
   }

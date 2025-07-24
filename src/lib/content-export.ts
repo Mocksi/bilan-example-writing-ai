@@ -9,8 +9,7 @@ import type {
   ContentSession, 
   ContentIteration, 
   SessionId,
-  ContentType,
-  SessionStats
+  ContentType
 } from '../types'
 import { getContentSessionStats } from './content-session-manager'
 import { analyzeSessionProgress, type ComparisonAnalysis } from './content-comparison'
@@ -328,93 +327,55 @@ export class ContentExportService {
     template: ExportTemplate,
     options: ExportOptions
   ): Promise<string> {
-    let markdown = ''
+    const sections: string[] = []
 
     // Header
-    markdown += `# ${this.generateSessionTitle(session)}\n\n`
-    
+    sections.push(`# ${this.generateSessionTitle(session)}\n`)
+    sections.push(`**Created:** ${new Date(session.startTime).toLocaleDateString()}\n`)
+    sections.push(`**Status:** ${session.status}\n`)
+
     if (options.includeMetadata) {
-      markdown += `**Content Type:** ${session.contentType.charAt(0).toUpperCase() + session.contentType.slice(1)}\n`
-      markdown += `**Created:** ${new Date(session.startTime).toLocaleString()}\n`
-      markdown += `**Status:** ${session.status}\n`
-      markdown += `**Iterations:** ${session.iterations.length}\n\n`
+      sections.push('## Session Information\n')
+      sections.push(`- **Session ID:** ${session.id}\n`)
+      sections.push(`- **Content Type:** ${session.contentType}\n`)
+      sections.push(`- **Total Iterations:** ${session.iterations.length}\n`)
+      
+      if (session.endTime) {
+        const duration = session.endTime - session.startTime
+        sections.push(`- **Duration:** ${Math.round(duration / 1000 / 60)} minutes\n`)
+      }
+      sections.push('\n')
     }
 
-    // User brief
-    markdown += `## Brief\n\n${session.userBrief}\n\n`
+    // User Brief
+    sections.push('## Brief\n')
+    sections.push(session.userBrief + '\n')
 
-    if (template === 'minimal') {
-      // Just the final content
-      const finalIteration = session.iterations[session.iterations.length - 1]
-      markdown += `## Final Content\n\n${finalIteration.generatedContent}\n\n`
-    } else if (template === 'standard') {
-      // Final content + some metadata
-      const analysis = await analyzeSessionProgress(session.id, session.iterations)
+    // Iterations
+    for (const [_index, iteration] of session.iterations.entries()) {
+      const attemptLabel = template === 'minimal' ? `Attempt ${iteration.attemptNumber}` : 
+                          `Iteration ${iteration.attemptNumber}`
       
-      markdown += `## Final Content\n\n${analysis.bestIteration.generatedContent}\n\n`
+      sections.push(`## ${attemptLabel}\n`)
+      sections.push(iteration.generatedContent)
       
-      if (options.includeAnalytics && analysis.improvementInsights.length > 0) {
-        markdown += `## Key Insights\n\n`
-        for (const insight of analysis.improvementInsights.slice(0, 3)) {
-          markdown += `- ${insight.description}\n`
-        }
-        markdown += '\n'
-      }
-    } else if (template === 'detailed' || template === 'analysis_report') {
-      // All iterations and analysis
-      const analysis = await analyzeSessionProgress(session.id, session.iterations)
-      
-      markdown += `## Best Content\n\n${analysis.bestIteration.generatedContent}\n\n`
-      
-      if (options.includeHistory) {
-        markdown += `## Iteration History\n\n`
-        for (const [index, iteration] of session.iterations.entries()) {
-          markdown += `### Attempt ${iteration.attemptNumber}\n\n`
-          markdown += `${iteration.generatedContent}\n\n`
-          
-          if (iteration.userFeedback) {
-            markdown += `**User Feedback:** ${iteration.userFeedback.type}`
-            if (iteration.userFeedback.refinementRequest) {
-              markdown += ` - "${iteration.userFeedback.refinementRequest}"`
-            }
-            markdown += '\n\n'
-          }
-        }
-      }
-
-      if (options.includeAnalytics) {
-        markdown += `## Analysis\n\n`
+      if (iteration.userFeedback && template !== 'minimal') {
+        sections.push('\n### User Feedback\n')
+        sections.push(`**Type:** ${iteration.userFeedback.type}\n`)
         
-        markdown += `### Quality Progression\n\n`
-        for (const metric of analysis.qualityProgression) {
-          markdown += `- Attempt ${metric.attemptNumber}: ${(metric.overallScore * 100).toFixed(1)}% quality score\n`
+        if (iteration.userFeedback.rating) {
+          sections.push(`**Rating:** ${iteration.userFeedback.rating > 0 ? '👍' : '👎'}\n`)
         }
-        markdown += '\n'
-
-        if (analysis.improvementInsights.length > 0) {
-          markdown += `### Insights\n\n`
-          for (const insight of analysis.improvementInsights) {
-            markdown += `- **${insight.type.replace('_', ' ')}**: ${insight.description}\n`
-          }
-          markdown += '\n'
-        }
-
-        if (analysis.recommendedNext.length > 0) {
-          markdown += `### Recommendations\n\n`
-          for (const rec of analysis.recommendedNext) {
-            markdown += `- **${rec.action.replace('_', ' ')}**: ${rec.description}\n`
-          }
-          markdown += '\n'
+        
+        if (iteration.userFeedback.refinementRequest) {
+          sections.push(`**Request:** ${iteration.userFeedback.refinementRequest}\n`)
         }
       }
+      
+      sections.push('\n')
     }
 
-    // Footer
-    if (options.includeMetadata) {
-      markdown += `---\n\n*Exported from Bilan Content Creation Demo on ${new Date().toLocaleString()}*\n`
-    }
-
-    return markdown
+    return sections.join('\n')
   }
 
   private async generateHTMLExport(
@@ -457,7 +418,7 @@ export class ContentExportService {
     session: ContentSession,
     options: ExportOptions
   ): Promise<string> {
-    let exportData: any = {
+    const exportData = {
       session: {
         id: session.id,
         contentType: session.contentType,
@@ -465,27 +426,18 @@ export class ContentExportService {
         status: session.status,
         startTime: session.startTime,
         endTime: session.endTime,
-        iterationCount: session.iterations.length
-      }
-    }
-
-    if (options.includeHistory) {
-      exportData.iterations = session.iterations
-    } else {
-      // Just the final iteration
-      exportData.finalIteration = session.iterations[session.iterations.length - 1]
-    }
-
-    if (options.includeAnalytics) {
-      const analysis = await analyzeSessionProgress(session.id, session.iterations)
-      exportData.analysis = analysis
-    }
-
-    if (options.includeMetadata) {
-      exportData.metadata = {
+        iterations: session.iterations.map(iteration => ({
+          id: iteration.id,
+          attemptNumber: iteration.attemptNumber,
+          generatedContent: iteration.generatedContent,
+          userFeedback: iteration.userFeedback,
+          timing: iteration.timing
+        }))
+      },
+      metadata: {
         exportedAt: Date.now(),
-        exportVersion: this.version,
-        options
+        includeHistory: options.includeHistory,
+        includeAnalytics: options.includeAnalytics
       }
     }
 
@@ -566,7 +518,7 @@ export class ContentExportService {
 
   private async generateCSVExport(
     session: ContentSession,
-    options: ExportOptions
+    _options: ExportOptions
   ): Promise<string> {
     const rows: string[] = []
     
@@ -672,7 +624,7 @@ export class ContentExportService {
       try {
         localStorage.setItem(`shared_${shareCode}`, JSON.stringify(session))
       } catch (error) {
-        console.warn('localStorage not available, falling back to in-memory storage')
+        console.info('localStorage not available, falling back to in-memory storage:', error)
         serverSharedSessions.set(shareCode, session)
       }
     } else {
@@ -740,7 +692,7 @@ export class ContentExportService {
         const stored = localStorage.getItem(`shared_${shareCode}`)
         return stored ? JSON.parse(stored) : null
       } catch (error) {
-        console.warn('localStorage error, trying in-memory storage')
+        console.info('localStorage error, falling back to in-memory storage:', error)
         // Fall back to in-memory storage
         return serverSharedSessions.get(shareCode) || null
       }

@@ -11,7 +11,7 @@ import type {
   ContentType,
   IterationId,
   SessionId,
-  TurnId
+  TurnId as _TurnId
 } from '../types'
 import { generateIterationId, generateTurnId } from '../types'
 
@@ -514,7 +514,7 @@ export class IterationManager {
    */
   private async calculateIterationMetrics(
     iteration: ContentIteration,
-    context: IterationContext
+    _context: IterationContext
   ): Promise<void> {
     const generationTime = iteration.timing.responseTime - iteration.timing.requestTime
     const contentLength = iteration.generatedContent.length

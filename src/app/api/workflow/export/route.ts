@@ -4,7 +4,8 @@
  * Handles content export requests in various formats.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
 import { getContentSession } from '../../../../lib/content-session-manager'
 import { 
   exportContentSession, 
@@ -14,6 +15,7 @@ import {
 } from '../../../../lib/content-export'
 import type { ExportFormat, ExportTemplate, ExportMetadata } from '../../../../lib/content-export'
 import { createSessionId } from '../../../../types'
+import type { ApiErrorDetails } from '../../../../types/lint-types'
 
 interface ExportRequest {
   sessionId: string
@@ -36,7 +38,7 @@ interface ExportResponse {
   error?: {
     code: string
     message: string
-    details?: any
+    details?: ApiErrorDetails
   }
 }
 
@@ -114,7 +116,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<ExportRes
       error: {
         code: 'EXPORT_FAILED',
         message: error instanceof Error ? error.message : 'Export failed',
-        details: process.env.NODE_ENV === 'development' ? error : undefined
+        details: process.env.NODE_ENV === 'development' ? {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        } : undefined
       }
     }, { status: 500 })
   }

@@ -1,6 +1,6 @@
 'use client'
 
-import { Badge, Group, Text, Tooltip, ActionIcon, Alert } from '@mantine/core'
+import { Badge, Group, Text, Tooltip, Alert } from '@mantine/core'
 import { useEffect, useState } from 'react'
 import { getAIStatus } from '../lib/ai-client'
 

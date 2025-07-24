@@ -11,36 +11,32 @@ import type {
   IterationId,
   UserFeedback,
   ContentSession,
-  ContentIteration
+  ContentIteration,
+  SessionStats
 } from '../types'
 import { 
   contentSessionManager,
   createContentSession,
-  updateContentSession,
   getContentSession,
   completeContentSession,
   addContentIteration
 } from './content-session-manager'
 import { 
-  iterationManager,
   createIteration,
-  addIterationFeedback,
-  getIterationHistory
+  addIterationFeedback
 } from './iteration-manager'
 import { 
-  refinementProcessor,
   processContentRefinement,
   analyzeFeedbackPatterns
 } from './refinement-processor'
 import { 
-  contentComparisonService,
   analyzeSessionProgress,
   createSideBySideComparison
 } from './content-comparison'
 import { 
-  contentExportService,
   exportContentSession,
-  createContentSummary
+  createContentSummary,
+  type ExportOptions
 } from './content-export'
 import { generateContentForType } from './ai-client'
 
@@ -77,14 +73,14 @@ export interface WorkflowResult {
     attemptNumber: number
     generationTime: number
     bilanTurnId: string
-    sessionStats?: any
+    sessionStats?: SessionStats
     recommendations?: string[]
   }
 }
 
 export interface WorkflowAnalysis {
-  sessionProgress: any
-  feedbackPatterns: any
+  sessionProgress: unknown
+  feedbackPatterns: unknown
   recommendations: string[]
   qualityTrend: 'improving' | 'declining' | 'stable'
   userSatisfaction: number
@@ -177,7 +173,7 @@ export class WorkflowOrchestrator {
 
       // Get session stats for metadata
       const sessionStats = this.config.enableAnalytics 
-        ? contentSessionManager.getSessionStats(session.id)
+        ? contentSessionManager.getSessionStats(session.id) || undefined
         : undefined
 
       // Generate recommendations
@@ -369,7 +365,7 @@ export class WorkflowOrchestrator {
   /**
    * Export workflow session in various formats
    */
-  async exportWorkflow(sessionId: SessionId, options: any = {}) {
+  async exportWorkflow(sessionId: SessionId, options: Partial<ExportOptions> = {}) {
     if (!this.config.enableExport) {
       throw new Error('Export functionality is disabled')
     }
@@ -379,7 +375,16 @@ export class WorkflowOrchestrator {
       throw new Error(`Session ${sessionId} not found`)
     }
 
-    return exportContentSession(session, options)
+    const exportOptions: ExportOptions = {
+      format: 'markdown',
+      template: 'standard',
+      includeMetadata: true,
+      includeHistory: false,
+      includeAnalytics: false,
+      ...options
+    }
+    
+    return exportContentSession(session, exportOptions)
   }
 
   /**
@@ -557,7 +562,7 @@ export class WorkflowOrchestrator {
 interface WorkflowState {
   status: 'idle' | 'generating' | 'refining' | 'awaiting_feedback' | 'completed' | 'error'
   lastActivity: number
-  currentRequest?: any
+  currentRequest?: unknown
   lastIteration?: ContentIteration
   error?: string
 }
@@ -577,7 +582,7 @@ export const refineContentWorkflow = (request: ContentRefinementRequest) =>
 export const analyzeContentWorkflow = (sessionId: SessionId) =>
   workflowOrchestrator.analyzeWorkflow(sessionId)
 
-export const exportContentWorkflow = (sessionId: SessionId, options?: any) =>
+export const exportContentWorkflow = (sessionId: SessionId, options?: Partial<ExportOptions>) =>
   workflowOrchestrator.exportWorkflow(sessionId, options)
 
 export const getWorkflowSummary = (sessionId: SessionId) =>

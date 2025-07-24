@@ -4,12 +4,14 @@
  * Handles content refinement requests through the workflow engine.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server'
 import { processContentRefinement } from '../../../../lib/refinement-processor'
 import { addIterationFeedback } from '../../../../lib/iteration-manager'
 import { getContentSession } from '../../../../lib/content-session-manager'
 import type { ContentType, UserFeedback } from '../../../../types'
 import { createSessionId, createIterationId } from '../../../../types'
+import type { ApiErrorDetails } from '../../../../types/lint-types'
 
 export interface RefineContentRequest {
   sessionId: string
@@ -39,7 +41,7 @@ export interface RefineContentResponse {
   error?: {
     code: string
     message: string
-    details?: any
+    details?: ApiErrorDetails
   }
 }
 
@@ -160,7 +162,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<RefineCon
       error: {
         code: 'REFINEMENT_FAILED',
         message: error instanceof Error ? error.message : 'Content refinement failed',
-        details: process.env.NODE_ENV === 'development' ? error : undefined
+        details: process.env.NODE_ENV === 'development' ? {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        } : undefined
       }
     }, { status: 500 })
   }

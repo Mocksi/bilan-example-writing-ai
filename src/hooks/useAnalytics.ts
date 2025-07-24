@@ -6,12 +6,20 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { initializeBilan, track, vote, getConfig, isBilanReady, startConversation } from '../lib/bilan'
+import { 
+  initializeBilan, 
+  track, 
+  vote, 
+  getConfig as _getConfig, 
+  isBilanReady, 
+  startConversation 
+} from '../lib/bilan'
 import type { TurnId, UserId, ConversationId } from '../types'
+import type { AnalyticsEventProperties } from '../types/lint-types'
 
 export interface UseAnalyticsReturn {
   // Simple tracking functions for content creation
-  trackContentEvent: (eventType: string, properties?: Record<string, any>) => Promise<void>
+  trackContentEvent: (eventType: string, properties?: AnalyticsEventProperties) => Promise<void>
   trackUserVote: (turnId: TurnId, rating: 1 | -1, comment?: string) => Promise<void>
   startNewConversation: () => Promise<ConversationId>
   
@@ -43,7 +51,7 @@ export function useAnalytics(userId: UserId): UseAnalyticsReturn {
   }, [userId])
 
   // Simple event tracking for content creation
-  const trackContentEvent = useCallback(async (eventType: string, properties?: Record<string, any>) => {
+  const trackContentEvent = useCallback(async (eventType: string, properties?: AnalyticsEventProperties) => {
     try {
       await track(eventType, properties)
     } catch (error) {
@@ -86,7 +94,7 @@ export function useAnalytics(userId: UserId): UseAnalyticsReturn {
 export function useContentTracking(userId: UserId) {
   const analytics = useAnalytics(userId)
 
-  const trackContentGeneration = useCallback(async (contentType: string, success: boolean, properties?: Record<string, any>) => {
+  const trackContentGeneration = useCallback(async (contentType: string, success: boolean, properties?: AnalyticsEventProperties) => {
     await analytics.trackContentEvent('content_generated', {
       contentType,
       success,

@@ -28,6 +28,7 @@ import {
 } from '@mocksi/bilan-sdk'
 
 import { getEnvVar } from './env'
+import type { AnalyticsEventProperties } from '../types/lint-types'
 
 // Bilan configuration interface
 export interface BilanConfig {
@@ -72,7 +73,7 @@ export async function initializeBilan(userId: string): Promise<void> {
     await bilanInit(initConfig)
 
     if (debug) {
-      console.log('Bilan SDK initialized successfully', { mode, endpoint })
+      console.info('Bilan SDK initialized successfully', { mode, endpoint })
     }
   } catch (error) {
     // Fire-and-forget: log error but don't throw
@@ -133,7 +134,7 @@ export async function vote(turnId: string, rating: 1 | -1, comment?: string): Pr
  */
 export async function track(
   eventType: string,
-  properties?: Record<string, any>,
+  properties?: AnalyticsEventProperties,
   content?: { promptText?: string; aiResponse?: string; context?: string }
 ): Promise<void> {
   try {

@@ -111,7 +111,8 @@ export class AIClient {
       this.isLoading = true
       this.downloadProgress = 0
       
-      console.log(`Loading AI model: ${this.config.model}`)
+      // Log model loading for debugging
+      console.info('Loading AI model:', this.config.model)
       
       // Dynamic import of WebLLM
       if (!webllm) {
@@ -136,7 +137,7 @@ export class AIClient {
       this.isLoading = false
       this.downloadProgress = 100
       
-      console.log(`AI model loaded successfully: ${this.config.model}`)
+      console.info(`AI model loaded successfully: ${this.config.model}`)
     } catch (error) {
       this.isLoading = false
       this.downloadProgress = 0
