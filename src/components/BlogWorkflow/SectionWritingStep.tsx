@@ -262,6 +262,64 @@ Write only the section content without section headers or numbering.`
     }
   }
 
+  /**
+   * Initiates a conversational interface for developing a specific blog post section
+   * 
+   * This async function sets up a Bilan-tracked conversation session focused on
+   * collaboratively developing content for a single blog section. It creates the
+   * conversation infrastructure, provides contextual initial messaging, updates
+   * the section's state to conversation mode, and opens the chat interface for
+   * interactive content development.
+   * 
+   * @async
+   * @function handleStartConversation
+   * @param {number} sectionIndex - Zero-based index of the section to start conversation for
+   * @returns {Promise<void>} Promise that resolves when conversation setup is complete
+   * 
+   * @description
+   * **Process Flow:**
+   * 1. **Validation**: Checks that the specified section exists in the sections array
+   * 2. **Bilan Integration**: Creates a new conversation via startConversation() with metadata
+   * 3. **Initial Message**: Generates contextual AI greeting with section-specific guidance
+   * 4. **State Updates**: Updates section method to 'conversation' and stores conversation data
+   * 5. **UI Activation**: Opens the conversation modal and sets active conversation context
+   * 6. **Error Handling**: Gracefully handles conversation creation failures
+   * 
+   * **Bilan Conversation Setup:**
+   * - Creates conversation with journeyId for analytics correlation
+   * - Sets topic to `section-writing-${sectionTitle}` for identification
+   * - Includes contentType 'blog' for proper categorization
+   * - Conversation ID stored for subsequent turn tracking
+   * 
+   * **Initial AI Message Structure:**
+   * - Welcomes user to collaborative section development
+   * - Provides section title and description context
+   * - Offers specific starting points and approaches
+   * - Encourages user engagement with open-ended questions
+   * 
+   * **Section State Changes:**
+   * - Updates `method` from default to 'conversation'
+   * - Stores `conversationId` for Bilan turn correlation
+   * - Initializes `conversationMessages` array with AI greeting
+   * - Maintains all other section properties (title, content, status)
+   * 
+   * **UI State Management:**
+   * - Sets `conversationalSectionIndex` to track active conversation
+   * - Shows conversation modal (`setShowConversationModal(true)`)
+   * - Enables message input and conversation interface
+   * 
+   * **Error Recovery:**
+   * - Logs conversation creation errors for debugging
+   * - Fails gracefully without affecting other sections
+   * - User can retry or use alternative content creation methods
+   * 
+   * @example
+   * ```typescript
+   * // Start conversation for the second section (index 1)
+   * await handleStartConversation(1)
+   * // Result: Opens chat modal for "Benefits of AI" section with contextual AI greeting
+   * ```
+   */
   const handleStartConversation = async (sectionIndex: number) => {
     const section = sections[sectionIndex]
     if (!section) return
