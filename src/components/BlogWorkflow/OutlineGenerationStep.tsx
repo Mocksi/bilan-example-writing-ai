@@ -179,6 +179,50 @@ SECTIONS:
 ESTIMATED_WORD_COUNT: [Provide an estimate for the full blog post]`
   }
 
+  /**
+   * Generates a structured blog post outline using AI based on topic exploration data
+   * 
+   * This async function orchestrates the complete outline generation process, including
+   * AI interaction tracking with Bilan SDK, response parsing, fallback handling, and
+   * state management. It constructs prompts using topic data, calls the AI service,
+   * parses the structured response, and updates the component state with the results.
+   * 
+   * @async
+   * @function handleGenerateOutline
+   * @returns {Promise<void>} Promise that resolves when outline generation is complete
+   * 
+   * @description
+   * **Process Flow:**
+   * 1. **Preparation**: Sets loading state and builds AI prompt using buildOutlinePrompt()
+   * 2. **AI Generation**: Calls generateContentForType() via trackTurn() for Bilan analytics
+   * 3. **Response Parsing**: Extracts outline, sections, and word count from AI response
+   * 4. **State Updates**: Updates component state with parsed results
+   * 5. **Error Handling**: Provides fallback outline if AI generation fails
+   * 
+   * **Bilan Integration:**
+   * - Tracks turn with metadata: contentType, journeyId, step, userIntent
+   * - Includes topicData context for analytics correlation
+   * - Stores turnId for potential user voting/feedback
+   * 
+   * **Response Parsing Logic:**
+   * - Looks for "OUTLINE:", "SECTIONS:", and "ESTIMATED_WORD_COUNT:" markers
+   * - Parses sections using "Title | Description" format
+   * - Falls back to extracting numbered/lettered items if parsing fails
+   * - Provides sensible defaults for missing data
+   * 
+   * **Error Recovery:**
+   * - Logs errors securely (message only, not full error object)
+   * - Generates fallback outline using available topic data
+   * - Creates default sections (Introduction, Main Content, Conclusion)
+   * - Ensures UI remains functional even if AI service fails
+   * 
+   * **State Side Effects:**
+   * - Updates `outline` with generated or fallback text
+   * - Updates `sections` array with parsed section data
+   * - Sets `estimatedWordCount` from AI or default value
+   * - Manages `isGenerating`, `hasGenerated` loading states
+   * - Stores `turnId` for voting functionality
+   */
   const handleGenerateOutline = async () => {
     setIsGenerating(true)
     
@@ -265,7 +309,7 @@ ESTIMATED_WORD_COUNT: [Provide an estimate for the full blog post]`
       setHasGenerated(true)
       
     } catch (error) {
-      console.error('Failed to generate outline:', error)
+      console.error('Failed to generate outline:', error instanceof Error ? error.message : 'Unknown error')
       
       // Provide fallback outline
       const fallbackOutline = `Blog Post Outline for: ${topicData?.topic || 'Your Topic'}
