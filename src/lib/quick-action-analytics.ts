@@ -155,12 +155,30 @@ export class QuickActionTracker {
 
   /**
    * Generate session summary analytics
+   * 
+   * Provides a comprehensive overview of the current session including active actions,
+   * session timing, and current state. Handles edge cases gracefully when no actions
+   * are currently active.
+   * 
+   * @returns {Object} Session summary containing:
+   *   - sessionId: Unique session identifier
+   *   - activeActions: Array of currently active action IDs
+   *   - sessionStartTime: Timestamp when first action started (or current time if none)
+   *   - currentTime: Current timestamp
    */
   getSessionSummary() {
+    const activeActionIds = Array.from(this.actionStartTimes.keys())
+    const startTimes = Array.from(this.actionStartTimes.values())
+    
+    // Guard against empty actionStartTimes to prevent Math.min error
+    const sessionStartTime = startTimes.length > 0 
+      ? Math.min(...startTimes)
+      : Date.now() // Default to current time if no actions have started
+    
     return {
       sessionId: this.sessionId,
-      activeActions: Array.from(this.actionStartTimes.keys()),
-      sessionStartTime: Math.min(...Array.from(this.actionStartTimes.values())),
+      activeActions: activeActionIds,
+      sessionStartTime,
       currentTime: Date.now()
     }
   }

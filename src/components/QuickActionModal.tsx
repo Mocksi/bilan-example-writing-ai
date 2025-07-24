@@ -15,6 +15,7 @@ import {
   LoadingOverlay,
   Box
 } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
 import { 
   IconCopy, 
@@ -75,13 +76,11 @@ export function QuickActionModal({
   const [input, setInput] = useState('')
   const [result, setResult] = useState<ActionResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   // Reset state when modal opens/closes or action changes
   const handleClose = () => {
     setInput('')
     setResult(null)
-    setError(null)
     setIsLoading(false)
     onClose()
   }
@@ -91,7 +90,6 @@ export function QuickActionModal({
     if (!action || !input.trim()) return
 
     setIsLoading(true)
-    setError(null)
 
     try {
       const response = await onSubmit(action.id, input.trim())
@@ -101,7 +99,12 @@ export function QuickActionModal({
         voted: false
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process action')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to process action'
+      notifications.show({
+        title: 'Action Failed',
+        message: errorMessage,
+        color: 'red'
+      })
     } finally {
       setIsLoading(false)
     }
@@ -164,7 +167,6 @@ export function QuickActionModal({
               minRows={4}
               maxRows={8}
               maxLength={action.maxLength || 2000}
-              error={error}
               description={`${input.length}/${action.maxLength || 2000} characters`}
             />
             

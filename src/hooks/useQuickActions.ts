@@ -7,6 +7,44 @@ import {
   trackQuickActionError 
 } from '../lib/quick-action-analytics'
 
+/**
+ * Custom error classes for robust error handling and tracking
+ */
+class QuickActionError extends Error {
+  public readonly code: string
+  public readonly isTracked: boolean
+  public readonly statusCode?: number
+
+  constructor(message: string, code: string, isTracked: boolean = false, statusCode?: number) {
+    super(message)
+    this.name = 'QuickActionError'
+    this.code = code
+    this.isTracked = isTracked
+    this.statusCode = statusCode
+  }
+}
+
+class QuickActionAPIError extends QuickActionError {
+  constructor(message: string, statusCode: number, isTracked: boolean = true) {
+    super(message, 'API_ERROR', isTracked, statusCode)
+    this.name = 'QuickActionAPIError'
+  }
+}
+
+class QuickActionNetworkError extends QuickActionError {
+  constructor(message: string = 'Network request failed', isTracked: boolean = false) {
+    super(message, 'NETWORK_ERROR', isTracked)
+    this.name = 'QuickActionNetworkError'
+  }
+}
+
+class QuickActionValidationError extends QuickActionError {
+  constructor(message: string, isTracked: boolean = false) {
+    super(message, 'VALIDATION_ERROR', isTracked)
+    this.name = 'QuickActionValidationError'
+  }
+}
+
 interface QuickActionHookState {
   isModalOpen: boolean
   selectedAction: QuickAction | null
@@ -76,6 +114,7 @@ export function useQuickActions() {
 
     const actionLabel = state.selectedAction?.label || actionId
     const inputLength = input.length
+    let trackingCompleted = false
 
     try {
       // Track action initiation
@@ -97,10 +136,11 @@ export function useQuickActions() {
         const errorData = await response.json()
         const errorMessage = errorData.error || 'Failed to process quick action'
         
-        // Track error
+        // Track API error and mark as tracked
         await trackQuickActionError(actionId, actionLabel, errorMessage, inputLength)
+        trackingCompleted = true
         
-        throw new Error(errorMessage)
+        throw new QuickActionAPIError(errorMessage, response.status, true)
       }
 
       const data = await response.json()
@@ -116,19 +156,36 @@ export function useQuickActions() {
         turnId: data.turnId
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-      
-      // Track error if not already tracked
-      if (!errorMessage.includes('Failed to process quick action')) {
-        await trackQuickActionError(actionId, actionLabel, errorMessage, inputLength)
+      let finalError: QuickActionError
+
+      // Handle different error types with robust tracking logic
+      if (error instanceof QuickActionError) {
+        // Custom error - check if tracking is needed
+        if (!error.isTracked && !trackingCompleted) {
+          await trackQuickActionError(actionId, actionLabel, error.message, inputLength)
+        }
+        finalError = error
+      } else if (error instanceof TypeError && error.message.includes('fetch')) {
+        // Network error
+        finalError = new QuickActionNetworkError('Network connection failed')
+        if (!trackingCompleted) {
+          await trackQuickActionError(actionId, actionLabel, finalError.message, inputLength)
+        }
+      } else {
+        // Unknown error
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+        finalError = new QuickActionError(errorMessage, 'UNKNOWN_ERROR')
+        if (!trackingCompleted) {
+          await trackQuickActionError(actionId, actionLabel, finalError.message, inputLength)
+        }
       }
       
       setState(prev => ({ 
         ...prev, 
         isProcessing: false, 
-        error: errorMessage 
+        error: finalError.message 
       }))
-      throw error
+      throw finalError
     }
   }
 
