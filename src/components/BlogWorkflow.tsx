@@ -131,12 +131,31 @@ export function BlogWorkflow({ contentType, onBack, onComplete }: BlogWorkflowPr
 
       // Update state with step data
       const nextStep = getNextStep(step)
-      setWorkflowState(prev => ({
-        ...prev,
-        completedSteps: newCompletedSteps,
-        [`${step.replace('-', '')}Data`]: data,
-        currentStep: nextStep || 'completed'
-      }))
+      setWorkflowState(prev => {
+        const updatedState: BlogWorkflowState = {
+          ...prev,
+          completedSteps: newCompletedSteps,
+          currentStep: (nextStep || 'completed') as BlogWorkflowStep | 'completed'
+        }
+
+        // Assign data to the correct property based on step type
+        switch (step) {
+          case 'topic-exploration':
+            updatedState.topicData = data as TopicExplorationData
+            break
+          case 'outline-generation':
+            updatedState.outlineData = data as OutlineGenerationData
+            break
+          case 'section-writing':
+            updatedState.sectionsData = data as SectionWritingData
+            break
+          case 'review-polish':
+            // Review step doesn't store data, just completes the workflow
+            break
+        }
+
+        return updatedState
+      })
 
       // Start next step if not at the end
       if (nextStep && workflowState.journeyId) {
