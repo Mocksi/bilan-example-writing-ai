@@ -4,16 +4,17 @@ import { Container, Title, Text, Card, Button, Group, Skeleton } from '@mantine/
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Suspense } from 'react'
 import type { ContentType } from '../../types'
+import { WorkflowInterface } from '../../components'
 
 /**
  * Content creation page component that renders the main interface for AI-powered content generation.
  * 
  * This component handles the core logic for the `/create` route, including:
  * - Extracting and validating the content type from URL query parameters
- * - Rendering appropriate UI based on the selected content type (blog, email, social)
+ * - Rendering the appropriate workflow interface based on content type (blog, email, social)
  * - Providing error handling for invalid or missing content type parameters
  * - Managing navigation back to the home page
- * - Displaying a placeholder interface for the upcoming content creator functionality
+ * - Integrating with the WorkflowInterface for step-by-step content creation
  * 
  * **Query Parameter Validation:**
  * - Expects a `type` query parameter with values: 'blog', 'email', or 'social'
@@ -21,25 +22,25 @@ import type { ContentType } from '../../types'
  * - Uses TypeScript type safety with the ContentType union type for validation
  * 
  * **UI Rendering Logic:**
- * - Success state: Shows content type-specific header with "coming soon" placeholder
+ * - Success state: Shows WorkflowInterface for the selected content type
  * - Error state: Displays user-friendly error message with back navigation
  * - Consistent Mantine UI components for styling and responsive design
  * - Navigation buttons use Next.js App Router for client-side routing
  * 
  * **Integration Points:**
- * - Designed to be replaced with full content creator interface in future iterations
- * - Placeholder shows selected content type for development/testing purposes
- * - Navigation system validates the App Router integration is working correctly
+ * - Connected to WorkflowInterface for complete workflow orchestration
+ * - Integrated with Bilan analytics through WorkflowInterface
+ * - Handles workflow completion and cancellation callbacks
  * 
  * @returns {JSX.Element} The rendered content creation page with either:
- *   - Main content creation interface (if valid content type)
+ *   - WorkflowInterface for valid content types
  *   - Error state with navigation options (if invalid/missing content type)
  * 
  * @example
  * // Accessed via navigation from home page:
- * // /create?type=blog -> Renders blog post creation interface
- * // /create?type=email -> Renders email creation interface  
- * // /create?type=social -> Renders social media post creation interface
+ * // /create?type=blog -> Renders blog workflow interface
+ * // /create?type=email -> Renders email workflow interface  
+ * // /create?type=social -> Renders social media workflow interface
  * // /create -> Renders error state (missing type parameter)
  * // /create?type=invalid -> Renders error state (invalid type parameter)
  */
@@ -49,6 +50,15 @@ function CreatePageContent() {
   const contentType = searchParams.get('type') as ContentType | null
 
   const handleGoBack = () => {
+    router.push('/')
+  }
+
+  const handleWorkflowComplete = (result: any) => {
+    // Navigate to home with success message
+    router.push('/?success=workflow-completed')
+  }
+
+  const handleWorkflowCancel = () => {
     router.push('/')
   }
 
@@ -68,39 +78,12 @@ function CreatePageContent() {
     )
   }
 
-  const contentTypeLabels: Record<ContentType, string> = {
-    blog: 'Blog Post',
-    email: 'Email',
-    social: 'Social Media Post'
-  }
-
   return (
-    <Container size="xl" py="xl">
-      <Card withBorder p="xl">
-        <Group justify="space-between" mb="lg">
-          <div>
-            <Title order={1}>Create {contentTypeLabels[contentType]}</Title>
-            <Text c="dimmed">AI-powered content generation</Text>
-          </div>
-          <Button variant="outline" onClick={handleGoBack}>
-            Back to Home
-          </Button>
-        </Group>
-
-        <Card withBorder p="lg" bg="gray.0">
-          <Text size="lg" fw={500} mb="md">
-            🚧 Content Creator Coming Soon
-          </Text>
-          <Text c="dimmed">
-            This will be the content creator interface for {contentTypeLabels[contentType].toLowerCase()} generation.
-            The navigation system is now working with Next.js App Router!
-          </Text>
-          <Text size="sm" c="dimmed" mt="md">
-            Selected content type: <strong>{contentType}</strong>
-          </Text>
-        </Card>
-      </Card>
-    </Container>
+    <WorkflowInterface
+      contentType={contentType}
+      onComplete={handleWorkflowComplete}
+      onCancel={handleWorkflowCancel}
+    />
   )
 }
 
