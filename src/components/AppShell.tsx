@@ -25,6 +25,7 @@ import {
 } from '@tabler/icons-react'
 import { ReactNode, useState } from 'react'
 import { AIStatusIndicator } from './AIStatusIndicator'
+import { QuickActionModal, type QuickAction } from './QuickActionModal'
 
 interface AppShellProps {
   children: ReactNode
@@ -36,19 +37,7 @@ interface AppShellProps {
  * Defines the available quick actions that users can perform as standalone turns
  * (not part of conversations or journeys). Each action represents a single AI
  * interaction with immediate results.
- * 
- * @interface QuickAction
- * @property {string} id - Unique identifier for the action
- * @property {string} label - User-facing display name
- * @property {string} description - Brief explanation of what the action does
- * @property {ReactNode} icon - Icon component for visual identification
  */
-interface QuickAction {
-  id: string
-  label: string
-  description: string
-  icon: ReactNode
-}
 
 /**
  * Available quick actions for standalone AI turns
@@ -62,25 +51,33 @@ const quickActions: QuickAction[] = [
     id: 'summarize',
     label: 'Summarize Text',
     description: 'Create concise summaries of long content',
-    icon: <IconFileText size={16} />
+    icon: <IconFileText size={16} />,
+    placeholder: 'Paste the text you want to summarize here...',
+    maxLength: 4000
   },
   {
     id: 'grammar',
     label: 'Fix Grammar',
     description: 'Correct grammar and improve clarity',
-    icon: <IconPencil size={16} />
+    icon: <IconPencil size={16} />,
+    placeholder: 'Enter text that needs grammar correction...',
+    maxLength: 2000
   },
   {
     id: 'translate',
     label: 'Translate',
     description: 'Translate text to different languages',
-    icon: <IconLanguage size={16} />
+    icon: <IconLanguage size={16} />,
+    placeholder: 'Enter text to translate (specify target language in your text)...',
+    maxLength: 1500
   },
   {
     id: 'brainstorm',
     label: 'Generate Ideas',
     description: 'Brainstorm creative ideas and concepts',
-    icon: <IconBulb size={16} />
+    icon: <IconBulb size={16} />,
+    placeholder: 'Describe what you need ideas for...',
+    maxLength: 1000
   }
 ]
 
@@ -128,6 +125,8 @@ const quickActions: QuickAction[] = [
 export function AppShell({ children }: AppShellProps) {
   const [opened, { toggle }] = useDisclosure()
   const [activeTab, setActiveTab] = useState<string>('workflows')
+  const [quickActionModalOpened, setQuickActionModalOpened] = useState(false)
+  const [selectedAction, setSelectedAction] = useState<QuickAction | null>(null)
 
   /**
    * Handle analytics dashboard navigation
@@ -149,8 +148,40 @@ export function AppShell({ children }: AppShellProps) {
    * @param {string} actionId - Unique identifier of the selected quick action
    */
   const handleQuickAction = (actionId: string) => {
-    // TODO: Implement quick action handlers for standalone turns
-    console.log('Quick action selected:', actionId)
+    const action = quickActions.find(a => a.id === actionId)
+    if (action) {
+      setSelectedAction(action)
+      setQuickActionModalOpened(true)
+    }
+  }
+
+  /**
+   * Handle quick action submission
+   * 
+   * Processes the selected quick action with user input through AI generation
+   * and tracks it as a standalone turn in Bilan analytics.
+   */
+  const handleQuickActionSubmit = async (actionId: string, input: string) => {
+    // TODO: Implement API call to process quick action
+    // This will be implemented in commit 2
+    console.log('Processing quick action:', actionId, input)
+    
+    // Placeholder response for UI testing
+    return {
+      result: `Processed "${actionId}" action for input: ${input.substring(0, 50)}...`,
+      turnId: `turn_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+    }
+  }
+
+  /**
+   * Handle quick action vote
+   * 
+   * Records user feedback for the quick action result using Bilan vote tracking.
+   */
+  const handleQuickActionVote = async (turnId: string, rating: 1 | -1) => {
+    // TODO: Implement Bilan vote tracking
+    // This will be implemented in commit 3
+    console.log('Vote submitted:', turnId, rating)
   }
 
   const handleLogoClick = () => {
@@ -348,6 +379,18 @@ export function AppShell({ children }: AppShellProps) {
       </MantineAppShell.Navbar>
 
       <MantineAppShell.Main>{children}</MantineAppShell.Main>
+
+      {/* Quick Action Modal */}
+      <QuickActionModal
+        opened={quickActionModalOpened}
+        onClose={() => {
+          setQuickActionModalOpened(false)
+          setSelectedAction(null)
+        }}
+        action={selectedAction}
+        onSubmit={handleQuickActionSubmit}
+        onVote={handleQuickActionVote}
+      />
     </MantineAppShell>
   )
 }
