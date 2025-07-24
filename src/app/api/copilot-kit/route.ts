@@ -162,7 +162,26 @@ interface ChatRequest {
  */
 export async function POST(req: NextRequest) {
   try {
-    const body: ChatRequest = await req.json()
+    let body: ChatRequest
+    try {
+      body = await req.json()
+    } catch (_jsonError) {
+      return new Response(JSON.stringify({
+        error: {
+          message: 'Invalid JSON in request body',
+          type: 'validation_error',
+          code: 'invalid_json'
+        },
+        status: 'error',
+        timestamp: Date.now()
+      }), {
+        status: 400,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      })
+    }
     const { 
       messages, 
       max_tokens = 200, 
@@ -171,6 +190,210 @@ export async function POST(req: NextRequest) {
       user_id,
       conversation_id 
     } = body
+
+    // Validate required fields and request structure
+    if (!messages) {
+      return new Response(JSON.stringify({
+        error: {
+          message: 'Missing required field: messages',
+          type: 'validation_error',
+          code: 'missing_messages'
+        },
+        status: 'error',
+        timestamp: Date.now()
+      }), {
+        status: 400,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      })
+    }
+
+    if (!Array.isArray(messages)) {
+      return new Response(JSON.stringify({
+        error: {
+          message: 'Invalid field type: messages must be an array',
+          type: 'validation_error',
+          code: 'invalid_messages_type'
+        },
+        status: 'error',
+        timestamp: Date.now()
+      }), {
+        status: 400,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      })
+    }
+
+    if (messages.length === 0) {
+      return new Response(JSON.stringify({
+        error: {
+          message: 'Invalid field value: messages array cannot be empty',
+          type: 'validation_error',
+          code: 'empty_messages'
+        },
+        status: 'error',
+        timestamp: Date.now()
+      }), {
+        status: 400,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      })
+    }
+
+    // Validate message structure
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i]
+      if (!message || typeof message !== 'object') {
+        return new Response(JSON.stringify({
+          error: {
+            message: `Invalid message structure at index ${i}: message must be an object`,
+            type: 'validation_error',
+            code: 'invalid_message_structure'
+          },
+          status: 'error',
+          timestamp: Date.now()
+        }), {
+          status: 400,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        })
+      }
+
+      if (!message.role || typeof message.role !== 'string') {
+        return new Response(JSON.stringify({
+          error: {
+            message: `Invalid message at index ${i}: missing or invalid 'role' field (must be string)`,
+            type: 'validation_error',
+            code: 'invalid_message_role'
+          },
+          status: 'error',
+          timestamp: Date.now()
+        }), {
+          status: 400,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        })
+      }
+
+      if (!['system', 'user', 'assistant'].includes(message.role)) {
+        return new Response(JSON.stringify({
+          error: {
+            message: `Invalid message at index ${i}: role must be 'system', 'user', or 'assistant'`,
+            type: 'validation_error',
+            code: 'invalid_role_value'
+          },
+          status: 'error',
+          timestamp: Date.now()
+        }), {
+          status: 400,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        })
+      }
+
+      if (!message.content || typeof message.content !== 'string') {
+        return new Response(JSON.stringify({
+          error: {
+            message: `Invalid message at index ${i}: missing or invalid 'content' field (must be non-empty string)`,
+            type: 'validation_error',
+            code: 'invalid_message_content'
+          },
+          status: 'error',
+          timestamp: Date.now()
+        }), {
+          status: 400,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        })
+      }
+
+      if (message.content.trim().length === 0) {
+        return new Response(JSON.stringify({
+          error: {
+            message: `Invalid message at index ${i}: content cannot be empty or whitespace only`,
+            type: 'validation_error',
+            code: 'empty_message_content'
+          },
+          status: 'error',
+          timestamp: Date.now()
+        }), {
+          status: 400,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          }
+        })
+      }
+    }
+
+    // Validate optional numeric parameters
+    if (max_tokens !== undefined && (typeof max_tokens !== 'number' || max_tokens <= 0 || max_tokens > 4000)) {
+      return new Response(JSON.stringify({
+        error: {
+          message: 'Invalid field value: max_tokens must be a positive number <= 4000',
+          type: 'validation_error',
+          code: 'invalid_max_tokens'
+        },
+        status: 'error',
+        timestamp: Date.now()
+      }), {
+        status: 400,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      })
+    }
+
+    if (temperature !== undefined && (typeof temperature !== 'number' || temperature < 0 || temperature > 2)) {
+      return new Response(JSON.stringify({
+        error: {
+          message: 'Invalid field value: temperature must be a number between 0 and 2',
+          type: 'validation_error',
+          code: 'invalid_temperature'
+        },
+        status: 'error',
+        timestamp: Date.now()
+      }), {
+        status: 400,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      })
+    }
+
+    if (stream !== undefined && typeof stream !== 'boolean') {
+      return new Response(JSON.stringify({
+        error: {
+          message: 'Invalid field type: stream must be a boolean',
+          type: 'validation_error',
+          code: 'invalid_stream_type'
+        },
+        status: 'error',
+        timestamp: Date.now()
+      }), {
+        status: 400,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        }
+      })
+    }
 
     // Initialize AI client with progress tracking
     const clientStatus = aiClient.getStatus()
