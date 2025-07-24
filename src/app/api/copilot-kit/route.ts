@@ -25,6 +25,141 @@ interface ChatRequest {
   conversation_id?: string
 }
 
+/**
+ * CopilotKit-compatible API endpoint for AI content generation
+ * 
+ * Handles both streaming and non-streaming chat completions using WebLLM for local AI inference.
+ * This endpoint serves as the backend runtime for CopilotKit components, providing OpenAI-compatible
+ * responses while integrating with our local AI client.
+ * 
+ * @param req - Next.js request object containing the chat completion request
+ * 
+ * @description
+ * **Request Body Structure:**
+ * ```typescript
+ * {
+ *   messages: Array<{
+ *     role: 'system' | 'user' | 'assistant',
+ *     content: string
+ *   }>,
+ *   max_tokens?: number = 200,        // Maximum tokens to generate
+ *   temperature?: number = 0.7,       // Sampling temperature (0.0 to 1.0)
+ *   stream?: boolean = false,         // Enable streaming response
+ *   user_id?: string,                 // Optional user identifier for analytics
+ *   conversation_id?: string          // Optional conversation identifier for analytics
+ * }
+ * ```
+ * 
+ * **Behavior:**
+ * 1. **Model Initialization**: Checks if WebLLM model is loaded, returns progress if still initializing
+ * 2. **Context Processing**: Builds conversation context from message history, extracts system prompts
+ * 3. **Content Generation**: Uses aiClient to generate response with specified parameters
+ * 4. **Response Format**: Returns OpenAI-compatible format for both streaming and non-streaming modes
+ * 
+ * **Response Types:**
+ * 
+ * **Initialization Status (200):**
+ * ```typescript
+ * {
+ *   status: 'initializing',
+ *   progress: number,                 // 0-100 download progress
+ *   message: string                   // User-friendly status message
+ * }
+ * ```
+ * 
+ * **Streaming Response (200):**
+ * Server-Sent Events with `Content-Type: text/event-stream`
+ * ```
+ * data: {
+ *   choices: [{
+ *     delta: { content: string },
+ *     finish_reason: null | 'stop'
+ *   }],
+ *   model: string
+ * }
+ * 
+ * data: [DONE]
+ * ```
+ * 
+ * **Non-Streaming Response (200):**
+ * ```typescript
+ * {
+ *   id: string,                       // Unique completion ID
+ *   object: 'chat.completion',
+ *   created: number,                  // Unix timestamp
+ *   model: string,                    // Model identifier
+ *   choices: [{
+ *     index: 0,
+ *     message: {
+ *       role: 'assistant',
+ *       content: string
+ *     },
+ *     finish_reason: 'stop'
+ *   }],
+ *   usage: {
+ *     prompt_tokens: number,
+ *     completion_tokens: number,
+ *     total_tokens: number
+ *   },
+ *   metadata: {                       // Enhanced analytics metadata
+ *     response_time: number,
+ *     model_version: string,
+ *     user_id?: string,
+ *     conversation_id?: string,
+ *     generation_time: number
+ *   }
+ * }
+ * ```
+ * 
+ * **Error Response (500):**
+ * ```typescript
+ * {
+ *   error: {
+ *     message: string,                // Error description
+ *     type: 'server_error',
+ *     code: 'api_error'
+ *   },
+ *   status: 'error',
+ *   timestamp: number                 // Unix timestamp
+ * }
+ * ```
+ * 
+ * **CORS Headers:**
+ * All responses include CORS headers for development compatibility:
+ * - `Access-Control-Allow-Origin: *`
+ * - `Access-Control-Allow-Headers: Content-Type`
+ * 
+ * @returns Promise<Response> - HTTP response with appropriate content type and CORS headers
+ * @throws {Error} - Internal server errors are caught and returned as structured error responses
+ * 
+ * @example
+ * ```typescript
+ * // Non-streaming request
+ * const response = await fetch('/api/copilot-kit', {
+ *   method: 'POST',
+ *   headers: { 'Content-Type': 'application/json' },
+ *   body: JSON.stringify({
+ *     messages: [
+ *       { role: 'system', content: 'You are a helpful assistant.' },
+ *       { role: 'user', content: 'Hello!' }
+ *     ],
+ *     max_tokens: 150,
+ *     temperature: 0.8,
+ *     stream: false
+ *   })
+ * })
+ * 
+ * // Streaming request
+ * const streamResponse = await fetch('/api/copilot-kit', {
+ *   method: 'POST',
+ *   headers: { 'Content-Type': 'application/json' },
+ *   body: JSON.stringify({
+ *     messages: [{ role: 'user', content: 'Tell me a story' }],
+ *     stream: true
+ *   })
+ * })
+ * ```
+ */
 export async function POST(req: NextRequest) {
   try {
     const body: ChatRequest = await req.json()
@@ -231,7 +366,34 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Add CORS support for development
+/**
+ * CORS preflight handler for development and cross-origin requests
+ * 
+ * Handles OPTIONS requests to enable CORS (Cross-Origin Resource Sharing) for the CopilotKit API endpoint.
+ * This is essential for browser-based applications that need to access the API from different origins during development.
+ * 
+ * @returns {Response} - Empty response with CORS headers allowing POST requests
+ * 
+ * @description
+ * **CORS Headers Sent:**
+ * - `Access-Control-Allow-Origin: *` - Allows requests from any origin (development only)
+ * - `Access-Control-Allow-Methods: POST, OPTIONS` - Allows POST and OPTIONS methods
+ * - `Access-Control-Allow-Headers: Content-Type, Authorization` - Allows required headers
+ * 
+ * **Security Note:**
+ * The wildcard origin (*) is used for development convenience. In production,
+ * this should be restricted to specific trusted domains.
+ * 
+ * @example
+ * ```typescript
+ * // Browser automatically sends OPTIONS request before POST
+ * fetch('/api/copilot-kit', {
+ *   method: 'POST',
+ *   headers: { 'Content-Type': 'application/json' },
+ *   body: JSON.stringify({ messages: [...] })
+ * })
+ * ```
+ */
 export async function OPTIONS() {
   return new Response(null, {
     status: 200,
