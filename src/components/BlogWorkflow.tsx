@@ -16,8 +16,8 @@ import {
 // import { IconInfoCircle, IconArrowLeft } from '@tabler/icons-react'
 import type { ContentType, SessionId } from '../types'
 import { startJourney, trackJourneyStep, endJourney } from '../lib/bilan'
-// Step components will be created in subsequent commits
-// import { TopicExplorationStep } from './BlogWorkflow/TopicExplorationStep'
+import { TopicExplorationStep } from './BlogWorkflow/TopicExplorationStep'
+// Remaining step components will be created in subsequent commits
 // import { OutlineGenerationStep } from './BlogWorkflow/OutlineGenerationStep'
 // import { SectionWritingStep } from './BlogWorkflow/SectionWritingStep'
 // import { ReviewPolishStep } from './BlogWorkflow/ReviewPolishStep'
@@ -222,13 +222,10 @@ export function BlogWorkflow({ contentType, onBack, onComplete }: BlogWorkflowPr
     switch (workflowState.currentStep) {
       case 'topic-exploration':
         return (
-          <Stack gap="md">
-            <Title order={3}>Topic Exploration</Title>
-            <Text c="dimmed">Conversational topic discovery coming in next commit...</Text>
-            <Button onClick={() => handleStepComplete('topic-exploration', { topic: 'Sample Topic', audience: 'Developers', keyPoints: ['Point 1', 'Point 2'], tone: 'Professional' })}>
-              Complete Step (Placeholder)
-            </Button>
-          </Stack>
+          <TopicExplorationStep
+            journeyId={workflowState.journeyId}
+            onComplete={(data) => handleStepComplete('topic-exploration', data)}
+          />
         )
       case 'outline-generation':
         return (
