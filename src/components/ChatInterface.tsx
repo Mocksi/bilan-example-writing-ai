@@ -34,9 +34,10 @@ import {
 import { useRouter } from 'next/navigation'
 import { useWorkflowDetection, useModelStatus } from '../hooks'
 import { useCopilotActions, transitionToWorkflow } from '../lib/copilotActions'
+import { ChatErrorBoundary } from './ChatInterface/ChatErrorBoundary'
 
 /**
- * Chat interface component with CopilotKit integration and comprehensive Bilan tracking
+ * Base chat interface component with CopilotKit integration and comprehensive Bilan tracking
  * 
  * This component demonstrates the "Conversations" concept in Bilan SDK by:
  * - Starting/ending conversation sessions 
@@ -48,8 +49,9 @@ import { useCopilotActions, transitionToWorkflow } from '../lib/copilotActions'
  * - Intelligent workflow detection and smooth context transitions
  * 
  * @component
+ * @internal - Use ChatInterface instead, which includes error boundary protection
  */
-export function ChatInterface() {
+export function ChatInterfaceBase() {
   const [conversationId, setConversationId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string>('')
@@ -284,5 +286,29 @@ Remember: You can detect workflow needs and suggest smooth transitions while pre
         </CopilotKit>
       )}
     </Container>
+  )
+}
+
+/**
+ * Chat interface component with error boundary protection
+ * 
+ * This is the main ChatInterface component that should be used throughout the application.
+ * It wraps the ChatInterfaceBase with a ChatErrorBoundary to ensure any runtime errors
+ * are caught and handled gracefully without crashing the entire application.
+ * 
+ * Features:
+ * - Complete chat interface functionality from ChatInterfaceBase
+ * - Error boundary protection for AI integration robustness
+ * - User-friendly error recovery options
+ * - Sanitized error logging for security
+ * - Automatic error reporting with unique IDs
+ * 
+ * @component
+ */
+export function ChatInterface() {
+  return (
+    <ChatErrorBoundary>
+      <ChatInterfaceBase />
+    </ChatErrorBoundary>
   )
 } 
