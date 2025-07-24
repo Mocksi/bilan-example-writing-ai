@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     let conversationContext = ''
     let systemPrompt = ''
     
-    messages.forEach((message, index) => {
+    messages.forEach((message) => {
       if (message.role === 'system') {
         systemPrompt = message.content
       } else if (message.role === 'user') {

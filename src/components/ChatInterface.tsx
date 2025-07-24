@@ -69,7 +69,7 @@ export function ChatInterface() {
   // Check AI model status and initialization progress
   const checkModelStatus = async () => {
     try {
-      const response = await fetch('/api/copilotkit', {
+      const response = await fetch('/api/copilot-kit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -473,7 +473,7 @@ I'll help you improve this text. Let me analyze it and provide suggestions for b
       <LoadingOverlay visible={isLoading} overlayProps={{ blur: 2 }} />
       
       {!isLoading && conversationId && (
-        <CopilotKit runtimeUrl="/api/copilotkit">
+        <CopilotKit runtimeUrl="/api/copilot-kit">
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Chat Header with Model Status */}
             <Group p="md" style={{ borderBottom: '1px solid #e9ecef' }} wrap="nowrap">
