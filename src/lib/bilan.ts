@@ -79,7 +79,7 @@ async function fetchBilanToken(userId: string): Promise<TokenResponse> {
     console.warn('Token fetch failed, using environment fallback:', error)
     
     return {
-      token: `fallback-token-${Date.now()}`,
+      token: `fallback-token-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       expiresAt: Date.now() + (24 * 60 * 60 * 1000),
       config: {
         mode: getEnvVar('NEXT_PUBLIC_BILAN_MODE', 'local') as 'local' | 'server',

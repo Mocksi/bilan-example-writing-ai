@@ -86,6 +86,7 @@ async function generateBilanToken(
   sessionId?: string, 
   metadata: Record<string, any> = {}
 ): Promise<string> {
+  // ⚠️ SECURITY WARNING: This is a DEMO implementation only!
   // In demo mode, generate a simple JWT-style token
   // In production, this would integrate with your auth system
   
@@ -121,7 +122,15 @@ function generateSignature(payload: string): string {
  */
 export function validateBilanToken(token: string): { valid: boolean; payload?: any } {
   try {
+    if (!token || typeof token !== 'string' || !token.includes('.')) {
+      return { valid: false }
+    }
+    
     const [payloadPart] = token.split('.')
+    if (!payloadPart) {
+      return { valid: false }
+    }
+    
     const payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString())
     
     // Check expiration
