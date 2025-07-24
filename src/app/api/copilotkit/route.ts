@@ -1,83 +1,57 @@
-import { 
-  CopilotRuntime, 
-  copilotRuntimeNextJSAppRouterEndpoint,
-  ServiceAdapter 
-} from '@copilotkit/runtime'
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { aiClient } from '../../../lib/ai-client'
 
 /**
  * CopilotKit API route with WebLLM backend
  * 
- * This route provides the backend for CopilotKit's chat interface,
- * using our existing WebLLM client for local AI inference.
- * 
- * The adapter translates between CopilotKit's expected OpenAI-compatible
- * format and our WebLLM implementation.
+ * This is a simplified implementation that will be enhanced in subsequent commits.
+ * Currently provides basic OpenAI-compatible API for CopilotKit integration.
  */
 
-class WebLLMServiceAdapter extends ServiceAdapter {
-  async process(forwardedProps: any) {
-    const { messages, ...options } = forwardedProps
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { messages, max_tokens = 200, temperature = 0.7 } = body
 
-    try {
-      // Ensure AI client is initialized
-      await aiClient.initialize()
-      
-      // Build conversation context from messages
-      let prompt = ''
-      messages.forEach((message: any) => {
-        if (message.role === 'user') {
-          prompt += `User: ${message.content}\n`
-        } else if (message.role === 'assistant') {
-          prompt += `Assistant: ${message.content}\n`
-        } else if (message.role === 'system') {
-          prompt = `${message.content}\n\n${prompt}`
-        }
-      })
-      
-      // Get the last user message for generation
-      const userMessages = messages.filter((m: any) => m.role === 'user')
-      const lastUserMessage = userMessages[userMessages.length - 1]?.content || ''
-      
-      // Generate response using our AI client
-      const response = await aiClient.generateContent(lastUserMessage, {
-        maxLength: options.max_tokens || 200,
-        temperature: options.temperature || 0.7,
-        topP: options.top_p || 0.9
-      })
-      
-      return {
-        choices: [{
-          message: {
-            role: 'assistant' as const,
-            content: response.text
-          },
-          finish_reason: 'stop' as const
-        }],
-        usage: {
-          prompt_tokens: response.metadata.promptTokens || 0,
-          completion_tokens: response.metadata.tokenCount || 0,
-          total_tokens: (response.metadata.promptTokens || 0) + (response.metadata.tokenCount || 0)
+    // Initialize AI client
+    await aiClient.initialize()
+
+    // Get the last user message
+    const userMessages = messages.filter((m: { role: string }) => m.role === 'user')
+    const lastUserMessage = userMessages[userMessages.length - 1]?.content || ''
+
+    // Generate response
+    const response = await aiClient.generateContent(lastUserMessage, {
+      maxLength: max_tokens,
+      temperature,
+      topP: 0.9
+    })
+
+    // Return OpenAI-compatible response
+    return new Response(JSON.stringify({
+      choices: [{
+        message: {
+          role: 'assistant',
+          content: response.text
         },
-        model: response.metadata.model
+        finish_reason: 'stop'
+      }],
+      usage: {
+        prompt_tokens: response.metadata.promptTokens || 0,
+        completion_tokens: response.metadata.tokenCount || 0,
+        total_tokens: (response.metadata.promptTokens || 0) + (response.metadata.tokenCount || 0)
+      },
+      model: response.metadata.model
+    }), {
+      headers: {
+        'Content-Type': 'application/json'
       }
-    } catch (error) {
-      console.error('WebLLM service adapter error:', error)
-      throw error
-    }
+    })
+  } catch (error) {
+    console.error('CopilotKit API error:', error)
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
-}
-
-const runtime = new CopilotRuntime()
-const serviceAdapter = new WebLLMServiceAdapter()
-
-export const POST = async (req: NextRequest) => {
-  const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
-    runtime,
-    serviceAdapter,
-    endpoint: '/api/copilotkit'
-  })
-
-  return handleRequest(req)
 } 
