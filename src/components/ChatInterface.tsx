@@ -11,11 +11,16 @@ import {
   Group,
   ThemeIcon,
   Alert,
-  LoadingOverlay
+  LoadingOverlay,
+  Progress,
+  Badge
 } from '@mantine/core'
 import {
   IconMessageCircle,
-  IconInfoCircle
+  IconInfoCircle,
+  IconBrain,
+  IconCheck,
+  IconAlertTriangle
 } from '@tabler/icons-react'
 import { 
   startConversation, 
@@ -34,6 +39,7 @@ import { useRouter } from 'next/navigation'
  * - Integrating user feedback (thumbs up/down) with vote tracking
  * - Managing conversation lifecycle with proper cleanup
  * - Providing custom actions for workflow transitions and content tools
+ * - Real-time progress tracking for model initialization and streaming
  * 
  * @component
  * @returns {JSX.Element} Full-featured chat interface with analytics tracking
@@ -43,7 +49,45 @@ export function ChatInterface() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string>('')
   const [userId] = useState(() => createUserId(`user_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`))
+  const [modelProgress, setModelProgress] = useState<number>(0)
+  const [modelStatus, setModelStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
+  const [statusMessage, setStatusMessage] = useState<string>('')
   const router = useRouter()
+
+  // Check AI model status and initialization progress
+  const checkModelStatus = async () => {
+    try {
+      const response = await fetch('/api/copilotkit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: 'status check' }],
+          max_tokens: 1
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.status === 'initializing') {
+        setModelStatus('loading')
+        setModelProgress(data.progress || 0)
+        setStatusMessage(data.message || 'Loading AI model...')
+        
+        // Continue checking until ready
+        setTimeout(checkModelStatus, 1000)
+      } else if (data.error) {
+        setModelStatus('error')
+        setStatusMessage(data.error.message || 'Model initialization failed')
+      } else {
+        setModelStatus('ready')
+        setModelProgress(100)
+        setStatusMessage('AI model ready')
+      }
+          } catch (_error) {
+        setModelStatus('error')
+        setStatusMessage('Failed to check model status')
+      }
+  }
 
   // Custom CopilotKit Actions for Content Creation Tools
   useCopilotAction({
@@ -259,6 +303,10 @@ I'll help you improve this text. Let me analyze it and provide suggestions for b
     const initializeChat = async () => {
       try {
         setIsLoading(true)
+        setModelStatus('loading')
+        
+        // Start model status checking
+        checkModelStatus()
         
         // Initialize Bilan SDK
         await initializeBilan(userId)
@@ -281,6 +329,7 @@ I'll help you improve this text. Let me analyze it and provide suggestions for b
         if (mounted) {
           setError('Failed to initialize chat. Please refresh the page.')
           setIsLoading(false)
+          setModelStatus('error')
         }
       }
     }
@@ -300,6 +349,8 @@ I'll help you improve this text. Let me analyze it and provide suggestions for b
       }
     }
   }, [userId, conversationId])
+  
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   // Note: Turn tracking and voting will be implemented in the next commit
   // This requires deeper integration with CopilotKit's message lifecycle
@@ -323,18 +374,40 @@ I'll help you improve this text. Let me analyze it and provide suggestions for b
       {!isLoading && conversationId && (
         <CopilotKit runtimeUrl="/api/copilotkit">
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {/* Chat Header */}
-            <Group p="md" style={{ borderBottom: '1px solid #e9ecef' }}>
+            {/* Chat Header with Model Status */}
+            <Group p="md" style={{ borderBottom: '1px solid #e9ecef' }} wrap="nowrap">
               <ThemeIcon size="lg" radius="xl" variant="light" color="blue">
                 <IconMessageCircle size={20} />
               </ThemeIcon>
-              <div>
-                <Text size="lg" fw={600}>
-                  AI Writing Assistant
-                </Text>
+              <div style={{ flex: 1 }}>
+                <Group gap="sm" align="center">
+                  <Text size="lg" fw={600}>
+                    AI Writing Assistant
+                  </Text>
+                  <Badge 
+                    size="sm" 
+                    color={modelStatus === 'ready' ? 'green' : modelStatus === 'loading' ? 'yellow' : 'red'}
+                    variant="light"
+                  >
+                    <Group gap={4} align="center">
+                      {modelStatus === 'ready' && <IconCheck size={12} />}
+                      {modelStatus === 'loading' && <IconBrain size={12} />}
+                      {modelStatus === 'error' && <IconAlertTriangle size={12} />}
+                      {modelStatus === 'ready' ? 'Ready' : modelStatus === 'loading' ? 'Loading' : 'Error'}
+                    </Group>
+                  </Badge>
+                </Group>
                 <Text size="sm" c="dimmed">
                   Powered by WebLLM • Analytics by Bilan • Enhanced with Actions
                 </Text>
+                {modelStatus === 'loading' && (
+                  <div style={{ marginTop: 4 }}>
+                    <Progress value={modelProgress} size="xs" />
+                    <Text size="xs" c="dimmed" mt={2}>
+                      {statusMessage} ({Math.round(modelProgress)}%)
+                    </Text>
+                  </div>
+                )}
               </div>
             </Group>
 
@@ -379,12 +452,18 @@ What would you like to work on today?`,
 6. Encourage exploration of both chat assistance and workflow-based creation
 
 Remember: You have access to powerful actions - suggest them when appropriate!`}
-                onInProgress={(_inProgress) => {
-                  // Could add loading states here if needed
+                onInProgress={(inProgress) => {
+                  // Update progress indicator when AI is generating
+                  if (inProgress) {
+                    setStatusMessage('Generating response...')
+                  } else {
+                    setStatusMessage('AI model ready')
+                  }
                 }}
                 onSubmitMessage={async (_message: string) => {
                   // This fires when user sends a message
                   // Turn tracking will be implemented in next commit
+                  setStatusMessage('Processing request...')
                 }}
                 // Note: Voting integration will be implemented in next commit
                 // CopilotKit's voting API may need different approach
