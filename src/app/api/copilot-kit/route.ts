@@ -273,7 +273,10 @@ export async function POST(req: NextRequest) {
             controller.enqueue(encoder.encode('data: [DONE]\n\n'))
             controller.close()
           } catch (error) {
-            console.error('Streaming error:', error)
+            console.error('Streaming error:', {
+              message: error instanceof Error ? error.message : 'Unknown streaming error',
+              type: error instanceof Error ? error.constructor.name : 'UnknownError'
+            })
             const errorChunk = `data: ${JSON.stringify({
               error: {
                 message: 'Content generation failed',
@@ -343,7 +346,10 @@ export async function POST(req: NextRequest) {
       })
     }
   } catch (error) {
-    console.error('CopilotKit API error:', error)
+    console.error('CopilotKit API error:', {
+      message: error instanceof Error ? error.message : 'Unknown API error',
+      type: error instanceof Error ? error.constructor.name : 'UnknownError'
+    })
     
     // Enhanced error response with helpful debugging info
     const errorResponse = {
