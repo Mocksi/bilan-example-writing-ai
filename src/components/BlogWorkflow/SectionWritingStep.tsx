@@ -25,6 +25,25 @@ import { startConversation, endConversation, trackTurn, vote } from '../../lib/b
 import type { TopicExplorationData } from './TopicExplorationStep'
 import type { OutlineGenerationData } from './OutlineGenerationStep'
 
+/**
+ * Data structure containing the completed section writing results and metadata
+ * 
+ * This interface represents the output of the section writing step in the blog
+ * creation workflow. It contains an array of individual sections with their
+ * content, completion status, and creation method, along with aggregate statistics
+ * for the entire blog post.
+ * 
+ * @interface SectionWritingData
+ * @property {Array<object>} sections - Array of individual blog post sections
+ * @property {string} sections[].title - The section heading/title extracted from the outline
+ * @property {string} sections[].content - The written content for this section (may be empty for drafts)
+ * @property {'draft' | 'complete'} sections[].status - Completion status indicating if section has content
+ * @property {number} sections[].wordCount - Number of words in the section content
+ * @property {'ai-generated' | 'conversation' | 'manual'} sections[].method - Creation method used for this section
+ * @property {string} [sections[].conversationId] - Optional Bilan conversation ID if created through chat interface
+ * @property {number} totalWordCount - Sum of word counts across all completed sections
+ * @property {number} completedAt - Unix timestamp when the section writing step was completed
+ */
 export interface SectionWritingData {
   sections: Array<{ 
     title: string
@@ -38,6 +57,19 @@ export interface SectionWritingData {
   completedAt: number
 }
 
+/**
+ * Props interface for the SectionWritingStep component
+ * 
+ * Defines the required inputs for the section writing step of the blog workflow.
+ * This component takes topic and outline data from previous steps and provides
+ * multiple methods for users to create content for each section of their blog post.
+ * 
+ * @interface SectionWritingStepProps
+ * @property {string} journeyId - Unique identifier for the current blog creation journey (for Bilan analytics tracking)
+ * @property {TopicExplorationData} [topicData] - Optional topic data from step 1 containing user's topic, audience, tone, and key points
+ * @property {OutlineGenerationData} [outlineData] - Optional outline data from step 2 containing structured sections to be written
+ * @property {function} onComplete - Callback function invoked when section writing is complete, receives SectionWritingData with all section results
+ */
 export interface SectionWritingStepProps {
   journeyId: string
   topicData?: TopicExplorationData
