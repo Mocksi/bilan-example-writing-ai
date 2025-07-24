@@ -493,6 +493,70 @@ Keep responses focused on developing this specific section of the blog post.`
     }
   }
 
+  /**
+   * Generates final blog section content by synthesizing conversation messages into polished text
+   * 
+   * This async function takes the accumulated conversation messages between the user and AI
+   * assistant and transforms them into a final, coherent section of blog content. It serves
+   * as the culmination of the conversational content development process, creating publication-ready
+   * text from the collaborative discussion and ending the associated Bilan conversation.
+   * 
+   * @async
+   * @function handleGenerateFromConversation
+   * @param {number} sectionIndex - Zero-based index of the section to generate final content for
+   * @returns {Promise<void>} Promise that resolves when content generation and conversation cleanup is complete
+   * 
+   * @description
+   * **Process Flow:**
+   * 1. **Validation**: Ensures section exists and has conversation messages to work with
+   * 2. **Loading State**: Sets section to generating state for UI feedback
+   * 3. **Content Synthesis**: Summarizes conversation into structured prompt for AI
+   * 4. **AI Generation**: Creates final polished content via trackTurn with Bilan analytics
+   * 5. **Content Processing**: Calculates word count and updates section state
+   * 6. **Conversation Cleanup**: Ends Bilan conversation and closes UI modal
+   * 7. **Error Recovery**: Handles failures gracefully with state reset
+   * 
+   * **Conversation Synthesis:**
+   * - Aggregates all conversation messages (user + assistant) into summary format
+   * - Preserves context and ideas developed during collaborative discussion
+   * - Formats as "role: content" pairs for AI comprehension
+   * 
+   * **AI Prompt Construction:**
+   * - Includes blog context (topic, audience, tone) for consistency
+   * - Provides complete conversation summary for idea incorporation
+   * - Instructs AI to create polished, publication-ready content (200-400 words)
+   * - Specifies content-only output (no headers/formatting)
+   * 
+   * **Bilan Integration:**
+   * - Tracks final content generation as a turn with comprehensive metadata
+   * - Links to existing conversation via conversationId for analytics correlation
+   * - Ends conversation with 'completed' status indicating successful content creation
+   * - Records outcome metadata for journey analytics
+   * 
+   * **Section State Updates:**
+   * - Sets final `content` from AI generation result
+   * - Calculates and stores `wordCount` for content statistics
+   * - Updates `status` to 'complete' indicating section is finished
+   * - Clears `isGenerating` flag to hide loading indicators
+   * 
+   * **UI State Management:**
+   * - Closes conversation modal (`setShowConversationModal(false)`)
+   * - Clears active conversation reference (`setConversationalSectionIndex(null)`)
+   * - Returns user to main section writing interface
+   * 
+   * **Error Handling:**
+   * - Logs generation failures securely (message only)
+   * - Resets loading state to allow user retry
+   * - Preserves conversation history for manual review or retry
+   * - Maintains conversation modal for continued interaction if needed
+   * 
+   * @example
+   * ```typescript
+   * // Generate final content for section 2 based on conversation history
+   * await handleGenerateFromConversation(1)
+   * // Result: Section content updated, conversation ended, modal closed
+   * ```
+   */
   const handleGenerateFromConversation = async (sectionIndex: number) => {
     const section = sections[sectionIndex]
     if (!section || !section.conversationMessages) return
