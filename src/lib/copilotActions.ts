@@ -51,7 +51,31 @@ export const transitionToWorkflow = async (
       transitionReason: workflowSuggestion?.reason
     })
 
-    // Prepare URL parameters with context
+    // Validate journeyId before using in URL parameters
+    if (!journeyId || typeof journeyId !== 'string' || journeyId.trim().length === 0) {
+      console.error('Failed to start journey for workflow transition', {
+        workflowType,
+        timestamp: new Date().toISOString(),
+        errorType: 'journey_start_failure',
+        context: 'workflow_transition'
+      })
+      
+      // Continue with navigation but without journey tracking
+      // This allows the workflow to still function even if analytics fail
+      const params = new URLSearchParams({
+        type: workflowType,
+        context: context.substring(0, 500), // Limit context length for URL
+        fromChat: 'true',
+        // journeyId intentionally omitted due to failure
+        ...(conversationId && preserveConversation && { conversationId })
+      })
+      
+      router.push(`/create?${params.toString()}`)
+      setWorkflowSuggestion(null)
+      return // Exit early without journey ID
+    }
+
+    // Prepare URL parameters with validated journeyId
     const params = new URLSearchParams({
       type: workflowType,
       context: context.substring(0, 500), // Limit context length for URL
