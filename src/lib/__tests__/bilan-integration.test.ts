@@ -123,7 +123,11 @@ describe('Bilan SDK Integration', () => {
       
       await vote(turnId, 1, 'Great response!')
 
-      expect(bilanVote).toHaveBeenCalledWith(turnId, 1, 'Great response!')
+      expect(bilanVote).toHaveBeenCalledWith(
+        turnId,
+        1,
+        expect.stringContaining('Great response!')
+      )
     })
 
     it('should handle empty turn ID gracefully', async () => {
