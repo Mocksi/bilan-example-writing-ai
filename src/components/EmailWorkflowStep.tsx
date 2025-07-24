@@ -413,7 +413,7 @@ Requirements:
 
 Please provide 5 different subject line options with brief explanations for each.`
 
-    case 'body-writing':
+    case 'body-writing': {
       const subjectData = allStepData['subject-generation'] as SubjectStepData
       return `Write a complete email body with this information:
 
@@ -434,6 +434,7 @@ Requirements:
 - Leave space for call-to-action at the end
 
 Please write the complete email body now.`
+    }
 
     case 'cta-creation':
       return `Create an effective call-to-action for this email:
