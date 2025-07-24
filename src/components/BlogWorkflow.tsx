@@ -164,14 +164,10 @@ export function BlogWorkflow({ contentType, onBack, onComplete }: BlogWorkflowPr
     }
   }
 
-  const handleWorkflowComplete = async (reviewData?: ReviewPolishData) => {
+  const handleWorkflowComplete = async () => {
     try {
       if (workflowState.journeyId) {
-        await endJourney(workflowState.journeyId, 'completed', {
-          finalOutput: reviewData?.finalContent,
-          satisfactionScore: reviewData?.satisfaction === 'high' ? 1 : 0, // Simple: satisfied or not
-          completionTime: Date.now()
-        })
+        await endJourney(workflowState.journeyId, 'completed')
       }
 
       onComplete?.(workflowState)
@@ -256,7 +252,7 @@ export function BlogWorkflow({ contentType, onBack, onComplete }: BlogWorkflowPr
             topicData={workflowState.topicData}
             outlineData={workflowState.outlineData}
             sectionsData={workflowState.sectionsData}
-            onComplete={(data) => handleWorkflowComplete(data)}
+            onComplete={handleWorkflowComplete}
           />
         )
       case 'completed':

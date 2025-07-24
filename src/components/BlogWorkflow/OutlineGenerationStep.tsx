@@ -17,7 +17,7 @@ import {
   Loader
 } from '@mantine/core'
 import { generateContentForType } from '../../lib/ai-client'
-import { trackTurn } from '../../lib/bilan'
+import { trackTurn, vote } from '../../lib/bilan'
 import type { TopicExplorationData } from './TopicExplorationStep'
 
 export interface OutlineGenerationData {
@@ -46,6 +46,7 @@ export function OutlineGenerationStep({ journeyId, topicData, onComplete }: Outl
   const [isAutoGenerating, setIsAutoGenerating] = useState(false)
   const [estimatedWordCount, setEstimatedWordCount] = useState(0)
   const [turnId, setTurnId] = useState<string>('')
+  const [userVote, setUserVote] = useState<1 | -1 | null>(null)
 
   // Auto-generate outline when component mounts if we have topic data
   useEffect(() => {
@@ -210,11 +211,23 @@ ESTIMATED_WORD_COUNT: [Provide an estimate for the full blog post]`
     }
   }
 
+  const handleVote = async (rating: 1 | -1) => {
+    if (!turnId) return
+    
+    try {
+      await vote(turnId, rating, rating === 1 ? 'Helpful outline' : 'Could be better')
+      setUserVote(rating)
+    } catch (error) {
+      console.error('Failed to record vote:', error)
+    }
+  }
+
   const handleRegenerateOutline = () => {
     setHasGenerated(false)
     setOutline('')
     setSections([])
     setTurnId('')
+    setUserVote(null)
     handleGenerateOutline()
   }
 
@@ -299,6 +312,27 @@ ESTIMATED_WORD_COUNT: [Provide an estimate for the full blog post]`
               <Text fw={500}>Generated Outline</Text>
               <Group gap="sm">
                 <Text size="xs" c="dimmed">~{estimatedWordCount} words</Text>
+                {/* Vote buttons */}
+                {turnId && (
+                  <Group gap="xs">
+                    <Button
+                      size="xs"
+                      variant={userVote === 1 ? 'filled' : 'light'}
+                      color="green"
+                      onClick={() => handleVote(1)}
+                    >
+                      👍 Good
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant={userVote === -1 ? 'filled' : 'light'}
+                      color="red"
+                      onClick={() => handleVote(-1)}
+                    >
+                      👎 Not helpful
+                    </Button>
+                  </Group>
+                )}
                 <Button
                   size="xs"
                   variant="light"

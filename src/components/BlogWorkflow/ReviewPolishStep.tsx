@@ -22,7 +22,7 @@ import {
   TextInput
 } from '@mantine/core'
 import { generateContentForType } from '../../lib/ai-client'
-import { trackTurn } from '../../lib/bilan'
+import { trackTurn, vote } from '../../lib/bilan'
 import type { TopicExplorationData } from './TopicExplorationStep'
 import type { OutlineGenerationData } from './OutlineGenerationStep'
 import type { SectionWritingData } from './SectionWritingStep'
@@ -41,7 +41,7 @@ export interface ReviewPolishStepProps {
   topicData?: TopicExplorationData
   outlineData?: OutlineGenerationData
   sectionsData?: SectionWritingData
-  onComplete: (data: ReviewPolishData) => void
+  onComplete: () => void
 }
 
 type ReviewTab = 'preview' | 'edit' | 'export'
@@ -61,6 +61,10 @@ export function ReviewPolishStep({
   const [showExportModal, setShowExportModal] = useState(false)
   const [satisfaction, setSatisfaction] = useState<'high' | 'medium' | 'low'>('high')
   const [hasInitialized, setHasInitialized] = useState(false)
+  const [titleTurnId, setTitleTurnId] = useState<string>('')
+  const [polishTurnId, setPolishTurnId] = useState<string>('')
+  const [titleVote, setTitleVote] = useState<1 | -1 | null>(null)
+  const [polishVote, setPolishVote] = useState<1 | -1 | null>(null)
 
   // Initialize content when component mounts
   useEffect(() => {
@@ -124,6 +128,7 @@ TITLE 3: [title]`
 
       if (titles.length > 0) {
         setBlogTitle(titles[0]) // Set the first title as default
+        setTitleTurnId(turnId) // Store turnId for voting
         
         // Show all titles for user selection (could be enhanced with a selection UI)
         console.log('Generated titles:', titles)
@@ -172,6 +177,7 @@ Return the polished version while keeping the same section headers and overall o
       )
 
       setFinalContent(result.text.trim())
+      setPolishTurnId(turnId)
 
     } catch (error) {
       console.error('Failed to polish content:', error)
@@ -399,46 +405,32 @@ ${content.replace(/^# (.*$)/gm, '<h1>$1</h1>')
     </Stack>
   )
 
+  const handleVoteOnTitle = async (rating: 1 | -1) => {
+    if (!titleTurnId) return
+    try {
+      await vote(titleTurnId, rating, rating === 1 ? 'Good title' : 'Title needs work')
+      setTitleVote(rating)
+    } catch (error) {
+      console.error('Failed to record title vote:', error)
+    }
+  }
+
+  const handleVoteOnPolish = async (rating: 1 | -1) => {
+    if (!polishTurnId) return
+    try {
+      await vote(polishTurnId, rating, rating === 1 ? 'Good polish' : 'Polish needs work')
+      setPolishVote(rating)
+    } catch (error) {
+      console.error('Failed to record polish vote:', error)
+    }
+  }
+
   const handleCompleteWorkflow = async () => {
     try {
-      // Track final satisfaction
-      await trackTurn(
-        'Complete blog workflow',
-        async () => ({ text: 'Workflow completed successfully' }),
-        {
-          contentType: 'blog',
-          journey_id: journeyId,
-          journey_step: 'review-polish',
-          userIntent: 'workflow-completion',
-          satisfaction,
-          finalWordCount: getTotalWordCount(),
-          finalTitle: blogTitle
-        }
-      )
-
-      // Pass the review data including satisfaction to parent
-      const reviewData: ReviewPolishData = {
-        finalTitle: blogTitle,
-        finalContent,
-        totalWordCount: getTotalWordCount(),
-        completedAt: Date.now(),
-        exportFormats: ['markdown', 'html', 'plain'],
-        satisfaction
-      }
-
-      onComplete(reviewData)
+      onComplete()
     } catch (error) {
       console.error('Failed to complete workflow:', error)
-      // Still pass data even if tracking fails
-      const reviewData: ReviewPolishData = {
-        finalTitle: blogTitle,
-        finalContent,
-        totalWordCount: getTotalWordCount(),
-        completedAt: Date.now(),
-        exportFormats: ['markdown', 'html', 'plain'],
-        satisfaction
-      }
-      onComplete(reviewData)
+      onComplete() // Complete anyway
     }
   }
 

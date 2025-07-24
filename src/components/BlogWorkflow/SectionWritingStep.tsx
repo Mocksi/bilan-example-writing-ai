@@ -21,7 +21,7 @@ import {
   Modal
 } from '@mantine/core'
 import { generateContentForType } from '../../lib/ai-client'
-import { startConversation, endConversation, trackTurn } from '../../lib/bilan'
+import { startConversation, endConversation, trackTurn, vote } from '../../lib/bilan'
 import type { TopicExplorationData } from './TopicExplorationStep'
 import type { OutlineGenerationData } from './OutlineGenerationStep'
 
@@ -61,6 +61,8 @@ interface SectionState {
   conversationMessages?: ConversationMessage[]
   isGenerating: boolean
   wordCount: number
+  turnId?: string
+  userVote?: 1 | -1 | null
 }
 
 export function SectionWritingStep({ journeyId, topicData, outlineData, onComplete }: SectionWritingStepProps) {
@@ -158,7 +160,8 @@ Write only the section content without section headers or numbering.`
               wordCount,
               status: 'complete',
               isGenerating: false,
-              method: 'ai-generated'
+              method: 'ai-generated',
+              turnId
             }
           : s
       ))
@@ -412,6 +415,20 @@ Please generate a polished section (200-400 words) that incorporates the ideas w
     return sections.filter(section => section.status === 'complete').length
   }
 
+  const handleVoteOnSection = async (sectionIndex: number, rating: 1 | -1) => {
+    const section = sections[sectionIndex]
+    if (!section?.turnId) return
+    
+    try {
+      await vote(section.turnId, rating, rating === 1 ? 'Helpful section' : 'Could be better')
+      setSections(prev => prev.map((s, i) => 
+        i === sectionIndex ? { ...s, userVote: rating } : s
+      ))
+    } catch (error) {
+      console.error('Failed to record vote:', error)
+    }
+  }
+
   const handleComplete = () => {
     const completedSections = sections.filter(s => s.status === 'complete')
     
@@ -506,6 +523,29 @@ Please generate a polished section (200-400 words) that incorporates the ideas w
           </Button>
         )}
       </Group>
+
+      {/* Vote buttons for AI-generated content */}
+      {section.turnId && section.status === 'complete' && (
+        <Group gap="xs" mt="xs">
+          <Text size="xs" c="dimmed">Rate this section:</Text>
+          <Button
+            size="xs"
+            variant={section.userVote === 1 ? 'filled' : 'light'}
+            color="green"
+            onClick={() => handleVoteOnSection(index, 1)}
+          >
+            👍 Good
+          </Button>
+          <Button
+            size="xs"
+            variant={section.userVote === -1 ? 'filled' : 'light'}
+            color="red"
+            onClick={() => handleVoteOnSection(index, -1)}
+          >
+            👎 Not helpful
+          </Button>
+        </Group>
+      )}
     </Card>
   )
 
