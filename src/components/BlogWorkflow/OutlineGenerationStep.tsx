@@ -92,6 +92,56 @@ export function OutlineGenerationStep({ journeyId, topicData, onComplete }: Outl
     }
   }, [topicData, hasGenerated, isGenerating])
 
+  /**
+   * Constructs a comprehensive AI prompt for generating structured blog post outlines
+   * 
+   * This function builds a detailed prompt string that provides the AI with all necessary
+   * context from the topic exploration phase to generate a well-structured blog outline.
+   * The prompt is designed to ensure consistent, parseable output with clear formatting
+   * directives that facilitate downstream processing in the workflow.
+   * 
+   * @function buildOutlinePrompt
+   * @returns {string} A formatted prompt string for AI outline generation
+   * 
+   * @description
+   * The function constructs a multi-section prompt containing:
+   * 
+   * **Input Dependencies:**
+   * - Requires `topicData` from the previous workflow step (TopicExplorationStep)
+   * - Falls back to generic prompt if topicData is unavailable
+   * 
+   * **Prompt Structure:**
+   * 1. **Context Section**: Provides topic, audience, tone, and key points from exploration
+   * 2. **Conversation History**: Includes recent discussion context (last 4 messages) if available
+   * 3. **Generation Instructions**: 5-point checklist for outline quality requirements
+   * 4. **Output Format**: Strict formatting directives for parseable results
+   * 
+   * **Output Format Requirements:**
+   * - `OUTLINE:` section with hierarchical bullet points and headers
+   * - `SECTIONS:` section with numbered list of "Title | Description" pairs
+   * - `ESTIMATED_WORD_COUNT:` section with numeric estimate
+   * 
+   * **Key Construction Details:**
+   * - Joins key points array with comma separation for readability
+   * - Conditionally includes conversation history only if present
+   * - Limits conversation history to last 4 messages to prevent prompt bloat
+   * - Uses template literals for clean string interpolation
+   * - Maintains consistent formatting for reliable AI parsing
+   * 
+   * @example
+   * ```typescript
+   * // With complete topic data
+   * const prompt = buildOutlinePrompt()
+   * // Returns: "Create a comprehensive blog post outline based on the following topic exploration:
+   * //           Topic: How to Build Better AI Products
+   * //           Target Audience: Product Managers
+   * //           ..."
+   * 
+   * // Without topic data
+   * const prompt = buildOutlinePrompt() 
+   * // Returns: "Please create a detailed blog post outline."
+   * ```
+   */
   const buildOutlinePrompt = () => {
     if (!topicData) {
       return 'Please create a detailed blog post outline.'
