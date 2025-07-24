@@ -19,7 +19,7 @@ import {
   IconPencil,
   IconLanguage,
   IconBulb,
-  IconSummary
+  IconFileText
 } from '@tabler/icons-react'
 import { ReactNode, useState } from 'react'
 import { AIStatusIndicator } from './AIStatusIndicator'
@@ -60,7 +60,7 @@ const quickActions: QuickAction[] = [
     id: 'summarize',
     label: 'Summarize Text',
     description: 'Create concise summaries of long content',
-    icon: <IconSummary size={16} />
+    icon: <IconFileText size={16} />
   },
   {
     id: 'grammar',
@@ -190,13 +190,13 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <MantineAppShell
-      header={{ height: 70 }}
+      header={{ height: { base: 60, sm: 70 } }}
       navbar={{
-        width: 300,
+        width: { base: 280, sm: 300 },
         breakpoint: 'sm',
         collapsed: { mobile: !opened },
       }}
-      padding="md"
+      padding={{ base: 'xs', sm: 'md' }}
     >
       <MantineAppShell.Header>
         <Group h="100%" px="md" justify="space-between">
@@ -230,19 +230,19 @@ export function AppShell({ children }: AppShellProps) {
         </Group>
 
         {/* Navigation Tabs for Dual-Mode Interface */}
-        <Box px="md" pb="sm">
+        <Box px={{ base: 'xs', sm: 'md' }} pb="sm">
           <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'workflows')}>
             <Tabs.List>
               <Tabs.Tab value="workflows">
                 <Group gap="xs">
                   <IconPencil size={16} />
-                  <Text>Workflows</Text>
+                  <Text size="sm">Workflows</Text>
                 </Group>
               </Tabs.Tab>
               <Tabs.Tab value="chat">
                 <Group gap="xs">
                   <IconSparkles size={16} />
-                  <Text>Chat</Text>
+                  <Text size="sm">Chat</Text>
                 </Group>
               </Tabs.Tab>
             </Tabs.List>
@@ -250,7 +250,7 @@ export function AppShell({ children }: AppShellProps) {
         </Box>
       </MantineAppShell.Header>
 
-      <MantineAppShell.Navbar p="md">
+      <MantineAppShell.Navbar p={{ base: 'xs', sm: 'md' }}>
         {activeTab === 'workflows' ? (
           <Stack gap="md">
             <Text fw={500} mb="sm">

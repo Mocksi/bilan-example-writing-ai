@@ -157,22 +157,22 @@ function MessageBubble({
           
           {isAI && !message.isStreaming && onVote && (
             <Group gap="xs">
-              <ActionIcon
-                size="xs"
-                variant={message.vote === 1 ? 'filled' : 'subtle'}
-                color={message.vote === 1 ? 'blue' : 'gray'}
-                onClick={() => onVote(message.id, 1)}
-              >
-                <IconThumbUp size={12} />
-              </ActionIcon>
-              <ActionIcon
-                size="xs"
-                variant={message.vote === -1 ? 'filled' : 'subtle'}
-                color={message.vote === -1 ? 'red' : 'gray'}
-                onClick={() => onVote(message.id, -1)}
-              >
-                <IconThumbDown size={12} />
-              </ActionIcon>
+                             <ActionIcon
+                 size="sm"
+                 variant={message.vote === 1 ? 'filled' : 'subtle'}
+                 color={message.vote === 1 ? 'blue' : 'gray'}
+                 onClick={() => onVote(message.id, 1)}
+               >
+                 <IconThumbUp size={12} />
+               </ActionIcon>
+               <ActionIcon
+                 size="sm"
+                 variant={message.vote === -1 ? 'filled' : 'subtle'}
+                 color={message.vote === -1 ? 'red' : 'gray'}
+                 onClick={() => onVote(message.id, -1)}
+               >
+                 <IconThumbDown size={12} />
+               </ActionIcon>
             </Group>
           )}
         </Group>
@@ -370,10 +370,13 @@ export function ChatInterface({
   const isEmpty = messages.length === 0
 
   return (
-    <Container size="xl" h="100%">
+    <Container size="xl" h="100%" p={{ base: 'xs', sm: 'md' }}>
       <Group align="flex-start" gap="md" h="100%">
         {/* Conversation History Sidebar */}
-        <Box style={{ width: 250, flexShrink: 0 }}>
+        <Box 
+          style={{ width: 250, flexShrink: 0 }} 
+          visibleFrom="sm"
+        >
           <ConversationHistory
             conversations={conversations}
             onSelect={onSelectConversation || (() => {})}
@@ -381,7 +384,10 @@ export function ChatInterface({
           />
         </Box>
 
-        <Divider orientation="vertical" />
+        <Divider 
+          orientation="vertical" 
+          visibleFrom="sm" 
+        />
 
         {/* Main Chat Area */}
         <Stack style={{ flex: 1, height: '100%' }}>
@@ -433,7 +439,7 @@ export function ChatInterface({
           )}
 
           {/* Message Input */}
-          <Group gap="sm" p="md">
+          <Group gap="sm" p={{ base: 'xs', sm: 'md' }}>
             <TextInput
               style={{ flex: 1 }}
               placeholder="Type your message..."

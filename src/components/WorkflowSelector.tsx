@@ -227,6 +227,7 @@ function WorkflowCard({
         <Button
           fullWidth
           mt="auto"
+          size="md"
           onClick={() => onSelect(workflow.id)}
         >
           Start {workflow.title}
@@ -274,7 +275,7 @@ function WorkflowCard({
  */
 export function WorkflowSelector({ onWorkflowSelect }: WorkflowSelectorProps) {
   return (
-    <Container size="xl" py="xl">
+    <Container size="xl" py={{ base: 'md', sm: 'xl' }}>
       <Stack align="center" gap="xl" mb="xl">
         <Title order={1} ta="center" fw={700}>
           Choose Your Content Journey
@@ -291,7 +292,10 @@ export function WorkflowSelector({ onWorkflowSelect }: WorkflowSelectorProps) {
         </Text>
       </Stack>
 
-      <SimpleGrid cols={{ base: 1, md: 2, lg: 3 }} spacing="lg">
+      <SimpleGrid 
+        cols={{ base: 1, sm: 2, lg: 3 }} 
+        spacing={{ base: 'md', sm: 'lg' }}
+      >
         {workflows.map((workflow) => (
           <WorkflowCard
             key={workflow.id}
