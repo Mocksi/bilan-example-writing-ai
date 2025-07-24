@@ -363,38 +363,56 @@ What specific aspect of "${section.title}" would you like to explore first? Or w
   }
 
   const handleSendMessage = async () => {
+    // ========================================
+    // STEP 1: INPUT VALIDATION AND GUARDS
+    // ========================================
+    // Ensure we have valid user input (not empty/whitespace) and an active conversation
     if (!currentInput.trim() || conversationalSectionIndex === null) return
 
+    // Get the section and conversation details for the active conversation
     const sectionIndex = conversationalSectionIndex
     const section = sections[sectionIndex]
+    
+    // Ensure section exists and has a valid Bilan conversation ID
     if (!section || !section.conversationId) return
 
+    // ========================================
+    // STEP 2: USER MESSAGE CREATION AND STATE UPDATE
+    // ========================================
+    // Create user message object with current timestamp for conversation history
     const userMessage: ConversationMessage = {
       role: 'user',
       content: currentInput,
       timestamp: Date.now()
     }
 
-    // Add user message
+    // Update section state: add user message to conversation and set loading state
     setSections(prev => prev.map((s, i) => 
       i === sectionIndex 
         ? { 
             ...s, 
             conversationMessages: [...(s.conversationMessages || []), userMessage],
-            isGenerating: true
+            isGenerating: true  // Show loading indicator while AI processes
           }
         : s
     ))
 
+    // Clear input field for next user message
     setCurrentInput('')
 
     try {
-      // Build conversation context
+      // ========================================
+      // STEP 3: PROMPT CONSTRUCTION WITH CONTEXT
+      // ========================================
+      // Build complete conversation history including the new user message
       const conversationHistory = [...(section.conversationMessages || []), userMessage]
+      
+      // Format conversation history for AI context (User: message, Assistant: response)
       const conversationContext = conversationHistory
         .map(msg => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
         .join('\n\n')
 
+      // Construct comprehensive prompt with blog context and conversation history
       const prompt = `You are helping a user write the "${section.title}" section of their blog post through conversation. 
 
 Blog Context:
@@ -415,45 +433,63 @@ Please respond as a helpful writing coach by:
 
 Keep responses focused on developing this specific section of the blog post.`
 
+      // ========================================
+      // STEP 4: AI CONTENT GENERATION WITH BILAN TRACKING
+      // ========================================
+      // Generate AI response using trackTurn for Bilan analytics integration
       const { result, turnId } = await trackTurn(
-        currentInput,
-        () => generateContentForType('blog', prompt),
+        currentInput,  // User's message as the turn prompt
+        () => generateContentForType('blog', prompt),  // AI generation function
         {
+          // Comprehensive metadata for Bilan analytics
           contentType: 'blog',
-          iterationNumber: conversationHistory.length / 2,
-          conversationId: section.conversationId,
-          journey_id: journeyId,
-          journey_step: 'section-writing',
-          userIntent: 'section-conversation',
-          sectionTitle: section.title
+          iterationNumber: conversationHistory.length / 2,  // Approximate turn count
+          conversationId: section.conversationId,  // Link to Bilan conversation
+          journey_id: journeyId,  // Link to overall blog creation journey
+          journey_step: 'section-writing',  // Current workflow step
+          userIntent: 'section-conversation',  // Specific interaction type
+          sectionTitle: section.title  // Section context for analytics
         }
       )
 
+      // ========================================
+      // STEP 5: AI MESSAGE CREATION AND STATE UPDATE
+      // ========================================
+      // Create AI response message with turnId for potential voting
       const aiMessage: ConversationMessage = {
         role: 'assistant',
         content: result.text,
         timestamp: Date.now(),
-        turnId
+        turnId  // Store for user feedback/voting functionality
       }
 
+      // Update section state: add both user and AI messages, clear loading state
       setSections(prev => prev.map((s, i) => 
         i === sectionIndex 
           ? { 
               ...s, 
               conversationMessages: [...(s.conversationMessages || []), userMessage, aiMessage],
-              isGenerating: false
+              isGenerating: false  // Hide loading indicator
             }
           : s
       ))
 
     } catch (error) {
-      console.error('Failed to send message:', error)
+      // ========================================
+      // STEP 6: ERROR HANDLING WITH STATE RESET
+      // ========================================
+      // Log error for debugging (using secure error message logging)
+      console.error('Failed to send message:', error instanceof Error ? error.message : 'Unknown error')
       
+      // Reset loading state on error so user can retry
       setSections(prev => prev.map((s, i) => 
         i === sectionIndex 
           ? { ...s, isGenerating: false }
           : s
       ))
+      
+      // Note: User message remains in conversation history even on AI failure
+      // This preserves conversation context for retry attempts
     }
   }
 
