@@ -121,6 +121,59 @@ export function SectionWritingStep({ journeyId, topicData, outlineData, onComple
     }
   }, [outlineData, sections.length])
 
+  /**
+   * Constructs a comprehensive AI prompt for generating individual blog post sections
+   * 
+   * This function builds a detailed, context-rich prompt that provides the AI with all
+   * necessary information to generate high-quality section content. The prompt includes
+   * blog context, section specifications, writing guidelines, and continuity information
+   * from previously written sections to ensure coherent flow throughout the blog post.
+   * 
+   * @function buildSectionPrompt
+   * @param {string} sectionTitle - The title/heading of the section to be written (from outline)
+   * @param {number} sectionIndex - Zero-based index of the section in the outline array
+   * @returns {string} A formatted prompt string optimized for AI section generation
+   * 
+   * @description
+   * The function constructs a multi-part prompt containing:
+   * 
+   * **Context Information:**
+   * - Blog topic, target audience, and desired tone from topic exploration
+   * - Complete outline for structural understanding
+   * - Section-specific title and description from outline data
+   * - Key points to consider throughout the content
+   * 
+   * **Continuity Features:**
+   * - Previous sections content (first 200 chars) for flow consistency
+   * - Only included for non-first sections to maintain narrative coherence
+   * - Helps AI understand what's already been covered
+   * 
+   * **Writing Instructions:**
+   * - 6-point checklist for section quality and structure
+   * - Word count guidance (200-400 words)
+   * - Tone and style consistency requirements
+   * - Practical examples and actionable content directives
+   * 
+   * **Data Dependencies:**
+   * - Relies on `topicData` from TopicExplorationStep for context
+   * - Uses `outlineData` from OutlineGenerationStep for section structure
+   * - Accesses current `sections` state for continuity information
+   * - Gracefully handles missing data with fallback values
+   * 
+   * **Output Format:**
+   * - Instructs AI to write only section content (no headers/numbering)
+   * - Ensures content flows naturally with existing sections
+   * - Optimized for blog post reading experience
+   * 
+   * @example
+   * ```typescript
+   * // Generate prompt for second section
+   * const prompt = buildSectionPrompt("Benefits of AI in Healthcare", 1)
+   * // Returns: "Write a detailed section for a blog post with the following context:
+   * //           Blog Topic: AI in Healthcare...
+   * //           Previous Sections Written: 1. Introduction: Healthcare is transforming..."
+   * ```
+   */
   const buildSectionPrompt = (sectionTitle: string, sectionIndex: number) => {
     const section = outlineData?.sections[sectionIndex]
     
