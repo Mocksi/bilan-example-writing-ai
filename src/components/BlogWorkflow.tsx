@@ -19,8 +19,7 @@ import { startJourney, trackJourneyStep, endJourney } from '../lib/bilan'
 import { TopicExplorationStep, type TopicExplorationData } from './BlogWorkflow/TopicExplorationStep'
 import { OutlineGenerationStep, type OutlineGenerationData } from './BlogWorkflow/OutlineGenerationStep'
 import { SectionWritingStep, type SectionWritingData } from './BlogWorkflow/SectionWritingStep'
-// Remaining step components will be created in subsequent commits
-// import { ReviewPolishStep } from './BlogWorkflow/ReviewPolishStep'
+import { ReviewPolishStep } from './BlogWorkflow/ReviewPolishStep'
 
 /**
  * Blog workflow step definitions following the implementation plan
@@ -236,13 +235,13 @@ export function BlogWorkflow({ contentType, onBack, onComplete }: BlogWorkflowPr
         )
       case 'review-polish':
         return (
-          <Stack gap="md">
-            <Title order={3}>Review & Polish</Title>
-            <Text c="dimmed">Final review and export coming in next commit...</Text>
-            <Button onClick={handleWorkflowComplete}>
-              Complete Workflow (Placeholder)
-            </Button>
-          </Stack>
+          <ReviewPolishStep
+            journeyId={workflowState.journeyId}
+            topicData={workflowState.topicData}
+            outlineData={workflowState.outlineData}
+            sectionsData={workflowState.sectionsData}
+            onComplete={handleWorkflowComplete}
+          />
         )
       case 'completed':
         return (
