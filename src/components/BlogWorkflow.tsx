@@ -17,8 +17,8 @@ import {
 import type { ContentType, SessionId } from '../types'
 import { startJourney, trackJourneyStep, endJourney } from '../lib/bilan'
 import { TopicExplorationStep } from './BlogWorkflow/TopicExplorationStep'
+import { OutlineGenerationStep } from './BlogWorkflow/OutlineGenerationStep'
 // Remaining step components will be created in subsequent commits
-// import { OutlineGenerationStep } from './BlogWorkflow/OutlineGenerationStep'
 // import { SectionWritingStep } from './BlogWorkflow/SectionWritingStep'
 // import { ReviewPolishStep } from './BlogWorkflow/ReviewPolishStep'
 
@@ -229,13 +229,11 @@ export function BlogWorkflow({ contentType, onBack, onComplete }: BlogWorkflowPr
         )
       case 'outline-generation':
         return (
-          <Stack gap="md">
-            <Title order={3}>Outline Generation</Title>
-            <Text c="dimmed">AI-powered outline creation coming in next commit...</Text>
-            <Button onClick={() => handleStepComplete('outline-generation', { outline: 'Sample Outline', sections: [{ title: 'Introduction', description: 'Opening section' }] })}>
-              Complete Step (Placeholder)
-            </Button>
-          </Stack>
+          <OutlineGenerationStep
+            journeyId={workflowState.journeyId}
+            topicData={workflowState.topicData}
+            onComplete={(data) => handleStepComplete('outline-generation', data)}
+          />
         )
       case 'section-writing':
         return (
