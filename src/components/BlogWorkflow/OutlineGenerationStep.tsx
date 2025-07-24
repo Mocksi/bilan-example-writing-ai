@@ -437,6 +437,87 @@ ESTIMATED_WORD_COUNT: [Provide an estimate for the full blog post]`
     }
   }
 
+  /**
+   * Resets outline-related state and triggers fresh AI-powered outline regeneration
+   * 
+   * This function provides users with the ability to discard the current outline and
+   * generate a completely new version using the same topic data. It performs comprehensive
+   * state cleanup to ensure a fresh start, then automatically initiates new outline
+   * generation to maintain smooth user workflow continuity.
+   * 
+   * **Core Functionality:**
+   * - Resets generation status flags to allow new outline creation
+   * - Clears existing outline content and extracted sections data
+   * - Removes previous Bilan analytics tracking identifiers
+   * - Resets user feedback state to neutral for new evaluation
+   * - Automatically triggers fresh outline generation process
+   * 
+   * **State Reset Process:**
+   * 1. **Generation Flag**: Sets `hasGenerated` to false, enabling new generation UI
+   * 2. **Content Cleanup**: Clears `outline` string, removing previous AI-generated content
+   * 3. **Section Reset**: Empties `sections` array, clearing extracted section data
+   * 4. **Analytics Reset**: Clears `turnId`, disconnecting from previous Bilan tracking
+   * 5. **Feedback Reset**: Sets `userVote` to null, removing previous satisfaction rating
+   * 6. **Auto-Regeneration**: Calls `handleGenerateOutline()` to start fresh generation
+   * 
+   * **User Experience Benefits:**
+   * - **Fresh Start**: Complete state reset ensures no residual data affects new generation
+   * - **Seamless Workflow**: Automatic regeneration maintains user momentum
+   * - **Clean Analytics**: Each regeneration gets independent Bilan tracking
+   * - **Unbiased Feedback**: Reset vote state allows fresh user evaluation
+   * - **Consistent UI**: Generation flags ensure proper loading states and button visibility
+   * 
+   * **Business Logic Context:**
+   * This function serves as a critical workflow recovery mechanism when users are
+   * unsatisfied with generated outline quality. It enables iterative content creation
+   * by allowing multiple generation attempts while maintaining clean state separation
+   * between each attempt for accurate analytics and user experience.
+   * 
+   * **Analytics Implications:**
+   * By clearing the turnId and userVote state, each regeneration creates independent
+   * Bilan tracking events, enabling analysis of:
+   * - Regeneration frequency and user satisfaction patterns
+   * - Quality improvement across multiple generation attempts
+   * - User engagement with iterative content creation workflow
+   * - Outline generation success rates and abandonment points
+   * 
+   * @function handleRegenerateOutline
+   * @returns {void} No return value - function performs state updates and triggers generation
+   * 
+   * @description
+   * **State Management:**
+   * All state updates are synchronous using React's setState functions, ensuring
+   * immediate UI updates and proper component re-rendering before triggering the
+   * asynchronous outline generation process.
+   * 
+   * **Workflow Integration:**
+   * This function integrates seamlessly with the outline generation workflow by:
+   * - Preserving original topic data from previous steps
+   * - Maintaining user context (audience, tone, key points)
+   * - Ensuring fresh Bilan analytics tracking for each attempt
+   * - Providing consistent user experience across multiple generations
+   * 
+   * **UI State Transitions:**
+   * The function triggers several UI state changes:
+   * - Shows generation loading state via `hasGenerated: false`
+   * - Hides previous outline content and feedback buttons
+   * - Displays fresh generation progress indicators
+   * - Resets vote button states to neutral appearance
+   * 
+   * @example
+   * ```typescript
+   * // User clicks "Regenerate Outline" button after reviewing unsatisfactory outline
+   * handleRegenerateOutline()
+   * 
+   * // Results in immediate state changes:
+   * // - hasGenerated: false (shows loading state)
+   * // - outline: '' (clears previous content)  
+   * // - sections: [] (removes extracted sections)
+   * // - turnId: '' (resets analytics tracking)
+   * // - userVote: null (clears previous feedback)
+   * // - Automatic call to handleGenerateOutline() for fresh generation
+   * ```
+   */
   const handleRegenerateOutline = () => {
     setHasGenerated(false)
     setOutline('')
