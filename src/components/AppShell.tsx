@@ -115,6 +115,7 @@ const quickActions: QuickAction[] = [
  * - Provides intuitive navigation between different AI interaction modes
  * - Maintains consistent Bilan analytics context across all user actions
  * - Uses Mantine v7 components for professional UI consistency
+ * - Includes accessibility improvements with keyboard navigation and ARIA labels
  * 
  * The dual-mode interface allows users to:
  * - Start structured content creation workflows (journeys)
@@ -152,6 +153,19 @@ export function AppShell({ children }: AppShellProps) {
     console.log('Quick action selected:', actionId)
   }
 
+  const handleLogoClick = () => {
+    // TODO: Implement navigation to home page
+    // Should use Next.js router to navigate to root route
+  }
+
+  const handleLogoKeyDown = (event: React.KeyboardEvent) => {
+    // Handle keyboard activation for accessibility
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      handleLogoClick()
+    }
+  }
+
   /**
    * Quick actions dropdown menu component
    * 
@@ -164,8 +178,7 @@ export function AppShell({ children }: AppShellProps) {
       <Menu.Target>
         <Button
           variant="light"
-          rightSection={<IconChevronDown size={14} />}
-          leftSection={<IconSparkles size={16} />}
+          rightSection={<IconChevronDown size={16} />}
           size="sm"
         >
           Quick Actions
@@ -180,10 +193,10 @@ export function AppShell({ children }: AppShellProps) {
             leftSection={action.icon}
             onClick={() => handleQuickAction(action.id)}
           >
-            <Box>
+            <div>
               <Text size="sm" fw={500}>{action.label}</Text>
               <Text size="xs" c="dimmed">{action.description}</Text>
-            </Box>
+            </div>
           </Menu.Item>
         ))}
       </Menu.Dropdown>
@@ -203,20 +216,20 @@ export function AppShell({ children }: AppShellProps) {
       <MantineAppShell.Header>
         <Group h="100%" px="md" justify="space-between">
           <Group>
-            <Burger
-              opened={opened}
-              onClick={toggle}
-              hiddenFrom="sm"
-              size="sm"
-            />
-            <Text
-              size="lg"
-              fw={600}
-              variant="gradient"
-              gradient={{ from: 'blue', to: 'cyan', deg: 90 }}
+            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
+            <Group 
+              style={{ cursor: 'pointer' }} 
+              onClick={handleLogoClick}
+              onKeyDown={handleLogoKeyDown}
+              role="button"
+              tabIndex={0}
+              aria-label="Go to homepage"
             >
-              Bilan Content Creator
-            </Text>
+              <Text size="lg" fw={600}>
+                🧠 Bilan Content Demo
+              </Text>
+            </Group>
+            <AIStatusIndicator />
           </Group>
           
           <Group gap="sm">
@@ -308,17 +321,19 @@ export function AppShell({ children }: AppShellProps) {
             <Stack gap="xs">
               <Button
                 variant="light"
+                justify="flex-start"
                 fullWidth
                 onClick={() => console.log('Start new conversation')}
               >
                 New Conversation
               </Button>
               <Button
-                variant="outline"
+                variant="subtle"
+                justify="flex-start"
                 fullWidth
-                onClick={() => console.log('View conversation history')}
+                onClick={() => console.log('Load recent conversations')}
               >
-                Recent Chats
+                Recent Conversations
               </Button>
             </Stack>
           </Stack>
@@ -332,9 +347,7 @@ export function AppShell({ children }: AppShellProps) {
         </Stack>
       </MantineAppShell.Navbar>
 
-      <MantineAppShell.Main>
-        {children}
-      </MantineAppShell.Main>
+      <MantineAppShell.Main>{children}</MantineAppShell.Main>
     </MantineAppShell>
   )
-} 
+}

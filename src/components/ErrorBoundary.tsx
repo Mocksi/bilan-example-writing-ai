@@ -1,6 +1,7 @@
 'use client'
 
-import { Component, ErrorInfo, ReactNode } from 'react'
+import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react'
 import { Container, Text, Button, Alert, Stack, Group } from '@mantine/core'
 
 interface Props {

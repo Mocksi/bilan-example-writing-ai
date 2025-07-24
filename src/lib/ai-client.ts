@@ -1,22 +1,29 @@
 /**
- * Transformers.js AI client for local content generation
+ * WebLLM AI client for local content generation
  * 
- * Provides a TypeScript interface to Transformers.js for completely local
+ * Provides a TypeScript interface to WebLLM for completely local
  * AI inference without any external services or APIs.
  */
 
 import type { ContentType } from '../types'
-import type { TransformersModule, TextGenerationPipeline } from '../types/transformers'
+import type { 
+  WebLLMModule, 
+  WebLLMEngine, 
+  WebLLMModelId,
+  ModelInitProgressCallback,
+  MLCEngineConfig
+} from '../types/webllm'
+import { WEBLLM_MODELS } from '../types/webllm'
 
 // Dynamic import to avoid TypeScript issues
-let transformers: TransformersModule | null = null
+let webllm: WebLLMModule | null = null
 
 export interface AIClientConfig {
   model?: string
   maxLength?: number
   temperature?: number
-  device?: 'cpu' | 'gpu'
-  padTokenId?: number
+  topP?: number
+  progressCallback?: ModelInitProgressCallback
 }
 
 export interface GenerationOptions {
@@ -26,7 +33,7 @@ export interface GenerationOptions {
   topK?: number
   topP?: number
   repetitionPenalty?: number
-  padTokenId?: number
+  stop?: string[]
 }
 
 export interface GenerationResponse {
@@ -36,6 +43,8 @@ export interface GenerationResponse {
     generationTime: number
     inputLength: number
     outputLength: number
+    tokenCount?: number
+    promptTokens?: number
   }
 }
 
@@ -45,47 +54,39 @@ export interface AIClientStatus {
   model: string
   error?: string
   config: Required<AIClientConfig>
+  downloadProgress?: number
 }
 
 /**
- * AI client using Transformers.js for local inference
+ * AI client using WebLLM for local inference
  */
 export class AIClient {
-  private generator: TextGenerationPipeline | null = null
+  private engine: WebLLMEngine | null = null
   private isInitialized = false
   private isLoading = false
+  private downloadProgress = 0
   private config: Required<AIClientConfig>
   private initializationPromise: Promise<void> | null = null
-  private transformersModule: TransformersModule | null = null
+  private webllmModule: WebLLMModule | null = null
 
-  constructor(config: AIClientConfig = {}, transformersModule?: TransformersModule) {
+  constructor(config: AIClientConfig = {}, webllmModule?: WebLLMModule) {
     this.config = {
-      model: config.model || 'Xenova/distilgpt2',
+      model: config.model || 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
       maxLength: config.maxLength || 200,
       temperature: config.temperature || 0.7,
-      device: config.device || 'cpu',
-      padTokenId: config.padTokenId || this.getDefaultPadTokenId(config.model || 'Xenova/distilgpt2'),
+      topP: config.topP || 0.9,
+      progressCallback: config.progressCallback || this.defaultProgressCallback.bind(this),
     }
-    this.transformersModule = transformersModule || null
+    this.webllmModule = webllmModule || null
   }
 
   /**
-   * Get default pad token ID based on model type
-   * Different models use different pad token IDs
+   * Default progress callback for model loading
    */
-  private getDefaultPadTokenId(model: string): number {
-    // Common pad token IDs for different model families
-    if (model.includes('gpt') || model.includes('distilgpt')) {
-      return 50256 // GPT-2/DistilGPT-2 pad token
-    } else if (model.includes('bert')) {
-      return 0 // BERT pad token
-    } else if (model.includes('t5')) {
-      return 0 // T5 pad token
-    } else if (model.includes('llama')) {
-      return 0 // LLaMA pad token
-    } else {
-      // Default fallback - GPT-2 style
-      return 50256
+  private defaultProgressCallback(progress: any) {
+    this.downloadProgress = progress.progress || 0
+    if (this.config.progressCallback && this.config.progressCallback !== this.defaultProgressCallback) {
+      this.config.progressCallback(progress)
     }
   }
 
@@ -108,25 +109,38 @@ export class AIClient {
   private async _doInitialize(): Promise<void> {
     try {
       this.isLoading = true
+      this.downloadProgress = 0
       
-      console.log(`Loading AI model: ${this.config.model}`)
+      // Log model loading for debugging
+      console.info('Loading AI model:', this.config.model)
       
-      // Dynamic import of transformers
-      if (!transformers) {
-        transformers = this.transformersModule || (await import('@xenova/transformers')) as TransformersModule
+      // Dynamic import of WebLLM
+      if (!webllm) {
+        const webllmImport = this.webllmModule || (await import('@mlc-ai/web-llm'))
+        webllm = webllmImport as WebLLMModule
       }
       
-      // Create text generation pipeline
-      this.generator = await transformers.pipeline('text-generation', this.config.model, {
-        device: this.config.device,
-      })
+      // Ensure webllm is not null
+      if (!webllm) {
+        throw new Error('Failed to load WebLLM module')
+      }
+      
+      // Create WebLLM engine with progress callback
+      const engineConfig: MLCEngineConfig = {
+        initProgressCallback: this.defaultProgressCallback,
+        logLevel: 'INFO'
+      }
+      
+      this.engine = await webllm.CreateMLCEngine(this.config.model, engineConfig)
       
       this.isInitialized = true
       this.isLoading = false
+      this.downloadProgress = 100
       
-      console.log(`AI model loaded successfully: ${this.config.model}`)
+      console.info(`AI model loaded successfully: ${this.config.model}`)
     } catch (error) {
       this.isLoading = false
+      this.downloadProgress = 0
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.error('Failed to initialize AI model:', errorMessage)
       throw new Error(`AI model initialization failed: ${errorMessage}`)
@@ -142,7 +156,7 @@ export class AIClient {
   ): Promise<GenerationResponse> {
     await this.initialize()
 
-    if (!this.generator) {
+    if (!this.engine) {
       throw new Error('AI model not initialized')
     }
 
@@ -150,22 +164,26 @@ export class AIClient {
     const inputLength = prompt.length
 
     try {
-      const generationOptions = {
-        max_length: options.maxLength ?? this.config.maxLength,
+      // Build messages for chat completion
+      const messages = [
+        {
+          role: 'user' as const,
+          content: prompt
+        }
+      ]
+
+      const chatRequest = {
+        messages,
         temperature: options.temperature ?? this.config.temperature,
-        do_sample: options.doSample ?? true,
-        top_k: options.topK ?? 50,
-        top_p: options.topP ?? 0.9,
-        repetition_penalty: options.repetitionPenalty ?? 1.1,
-        pad_token_id: options.padTokenId ?? this.config.padTokenId,
+        top_p: options.topP ?? this.config.topP,
+        max_tokens: options.maxLength ?? this.config.maxLength,
+        stop: options.stop || undefined
       }
 
-      const result = await this.generator(prompt, generationOptions)
+      const result = await this.engine.chat.completions.create(chatRequest)
       
-      // Extract generated text (remove the original prompt)
-      const fullText = Array.isArray(result) ? result[0].generated_text : result.generated_text
-      const generatedText = fullText.slice(prompt.length).trim()
-      
+      // Extract generated text
+      const generatedText = result.choices[0]?.message?.content || ''
       const generationTime = Date.now() - startTime
 
       return {
@@ -175,6 +193,8 @@ export class AIClient {
           generationTime,
           inputLength,
           outputLength: generatedText.length,
+          tokenCount: result.usage?.total_tokens,
+          promptTokens: result.usage?.prompt_tokens,
         },
       }
     } catch (error) {
@@ -212,6 +232,7 @@ export class AIClient {
       isLoading: this.isLoading,
       model: this.config.model,
       config: this.config,
+      downloadProgress: this.downloadProgress,
     }
   }
 
@@ -220,13 +241,18 @@ export class AIClient {
    */
   updateConfig(newConfig: Partial<AIClientConfig>): void {
     const oldModel = this.config.model
-    this.config = { ...this.config, ...newConfig }
+    this.config = { 
+      ...this.config, 
+      ...newConfig,
+      progressCallback: newConfig.progressCallback || this.config.progressCallback
+    }
     
     // If model changed, reset initialization
     if (newConfig.model && newConfig.model !== oldModel) {
       this.isInitialized = false
-      this.generator = null
+      this.engine = null
       this.initializationPromise = null
+      this.downloadProgress = 0
     }
   }
 
@@ -235,12 +261,12 @@ export class AIClient {
    */
   private buildPromptForContentType(contentType: ContentType, userBrief: string): string {
     const templates = {
-      blog: `Write an engaging blog post about ${userBrief}. Make it informative and well-structured:\n\n`,
-      email: `Write a professional email about ${userBrief}. Keep it clear and concise:\n\n`,
-      social: `Write a social media post about ${userBrief}. Make it engaging and shareable:\n\n`,
+      blog: `Write an engaging blog post about ${userBrief}. Make it informative and well-structured with a clear introduction, body, and conclusion.`,
+      email: `Write a professional email about ${userBrief}. Keep it clear, concise, and appropriate for business communication.`,
+      social: `Write a social media post about ${userBrief}. Make it engaging, shareable, and suitable for social platforms.`,
     }
 
-    return templates[contentType] || `Write about ${userBrief}:\n\n`
+    return templates[contentType] || `Write about ${userBrief}.`
   }
 
   /**
@@ -270,13 +296,49 @@ export class AIClient {
   }
 
   /**
+   * Get available models
+   */
+  getAvailableModels() {
+    return WEBLLM_MODELS
+  }
+
+  /**
+   * Switch to a different model
+   */
+  async switchModel(modelId: WebLLMModelId): Promise<void> {
+    if (this.engine && this.isInitialized) {
+      await this.engine.reload(modelId)
+      this.config.model = modelId
+    } else {
+      this.updateConfig({ model: modelId })
+    }
+  }
+
+  /**
+   * Get runtime statistics
+   */
+  getRuntimeStats() {
+    if (this.engine && this.isInitialized) {
+      return this.engine.getRuntimeStats()
+    }
+    return {
+      prefillThroughput: 0,
+      decodingThroughput: 0
+    }
+  }
+
+  /**
    * Clean up resources
    */
-  dispose(): void {
-    this.generator = null
+  async dispose(): Promise<void> {
+    if (this.engine) {
+      await this.engine.unload()
+    }
+    this.engine = null
     this.isInitialized = false
     this.isLoading = false
     this.initializationPromise = null
+    this.downloadProgress = 0
   }
 }
 

@@ -1,13 +1,13 @@
 'use client'
 
-import { Badge, Group, Text, Tooltip, ActionIcon, Alert } from '@mantine/core'
+import { Badge, Group, Text, Tooltip, Alert } from '@mantine/core'
 import { useEffect, useState } from 'react'
 import { getAIStatus } from '../lib/ai-client'
 
 /**
  * Real-time AI client status indicator component
  * 
- * Displays the current state of the AI client (Transformers.js) including initialization status,
+ * Displays the current state of the AI client (WebLLM) including initialization status,
  * loading state, active model, and any error conditions. Updates automatically every 2 seconds
  * to provide users with current AI service availability information.
  * 

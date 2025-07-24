@@ -141,7 +141,7 @@ Please create the social media post now:`,
     const template = this.templates[context.contentType]
     const contextUsed: string[] = []
     
-    let prompt = template.systemPrompt + '\n\n'
+    const prompt = template.systemPrompt + '\n\n'
     
     // Build the user prompt with context injection
     let userPrompt = template.userPromptTemplate.replace('{userBrief}', context.userBrief)

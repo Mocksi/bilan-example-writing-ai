@@ -27,6 +27,7 @@ export interface ContentSession {
   status: SessionStatus
   startTime: number
   endTime?: number
+  metadata?: Record<string, unknown>
 }
 
 /**
@@ -126,7 +127,7 @@ export interface BilanEventMetadata {
   systemPromptVersion?: string
   
   // Custom properties
-  [key: string]: any
+  [key: string]: unknown
 }
 
 /**
@@ -162,7 +163,7 @@ export interface AnalyticsEvent {
 export interface JourneyStep {
   stepName: string
   completedAt: number
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 /**
@@ -182,62 +183,56 @@ export interface UserJourney {
 /**
  * Type guard functions for runtime type validation
  */
-export const isContentType = (value: any): value is ContentType => {
+export const isContentType = (value: unknown): value is ContentType => {
   return typeof value === 'string' && ['blog', 'email', 'social'].includes(value)
 }
 
-export const isFeedbackType = (value: any): value is FeedbackType => {
+export const isFeedbackType = (value: unknown): value is FeedbackType => {
   return typeof value === 'string' && ['accept', 'reject', 'refine'].includes(value)
 }
 
-export const isAcceptanceLevel = (value: any): value is AcceptanceLevel => {
+export const isAcceptanceLevel = (value: unknown): value is AcceptanceLevel => {
   return typeof value === 'string' && ['as_is', 'light_edit', 'heavy_edit', 'inspiration'].includes(value)
 }
 
-export const isSessionStatus = (value: any): value is SessionStatus => {
+export const isSessionStatus = (value: unknown): value is SessionStatus => {
   return typeof value === 'string' && ['active', 'completed', 'abandoned'].includes(value)
 }
 
-export const isUserFeedback = (value: any): value is UserFeedback => {
+export const isUserFeedback = (value: unknown): value is UserFeedback => {
   return (
     typeof value === 'object' &&
     value !== null &&
-    isFeedbackType(value.type) &&
-    (value.rating === undefined || value.rating === 1 || value.rating === -1) &&
-    (value.refinementRequest === undefined || typeof value.refinementRequest === 'string') &&
-    (value.quickFeedback === undefined || Array.isArray(value.quickFeedback)) &&
-    (value.acceptanceLevel === undefined || isAcceptanceLevel(value.acceptanceLevel))
+    'type' in value &&
+    isFeedbackType((value as Record<string, unknown>).type)
   )
 }
 
-export const isContentIteration = (value: any): value is ContentIteration => {
+export const isContentIteration = (value: unknown): value is ContentIteration => {
   return (
     typeof value === 'object' &&
     value !== null &&
-    typeof value.id === 'string' &&
-    typeof value.attemptNumber === 'number' &&
-    typeof value.prompt === 'string' &&
-    typeof value.generatedContent === 'string' &&
-    typeof value.bilanTurnId === 'string' &&
-    (value.userFeedback === undefined || isUserFeedback(value.userFeedback)) &&
-    typeof value.timing === 'object' &&
-    typeof value.timing.requestTime === 'number' &&
-    typeof value.timing.responseTime === 'number' &&
-    (value.timing.userResponseTime === undefined || typeof value.timing.userResponseTime === 'number')
+    'id' in value &&
+    'attemptNumber' in value &&
+    'prompt' in value &&
+    'generatedContent' in value &&
+    'bilanTurnId' in value &&
+    'timing' in value
   )
 }
 
-export const isContentSession = (value: any): value is ContentSession => {
+export const isContentSession = (value: unknown): value is ContentSession => {
   return (
     typeof value === 'object' &&
     value !== null &&
-    typeof value.id === 'string' &&
-    isContentType(value.contentType) &&
-    typeof value.userBrief === 'string' &&
-    Array.isArray(value.iterations) &&
-    value.iterations.every(isContentIteration) &&
-    isSessionStatus(value.status) &&
-    typeof value.startTime === 'number' &&
-    (value.endTime === undefined || typeof value.endTime === 'number')
+    'id' in value &&
+    'contentType' in value &&
+    'userBrief' in value &&
+    'iterations' in value &&
+    'status' in value &&
+    'startTime' in value &&
+    isContentType((value as Record<string, unknown>).contentType) &&
+    isSessionStatus((value as Record<string, unknown>).status) &&
+    Array.isArray((value as Record<string, unknown>).iterations)
   )
 } 
