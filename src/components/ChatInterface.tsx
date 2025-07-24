@@ -29,7 +29,8 @@ import {
   startConversation, 
   endConversation, 
   initializeBilan,
-  createUserId
+  createUserId,
+  type UserId
 } from '../lib/bilan'
 import { useRouter } from 'next/navigation'
 import { useWorkflowDetection, useModelStatus } from '../hooks'
@@ -55,7 +56,7 @@ export function ChatInterfaceBase() {
   const [conversationId, setConversationId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string>('')
-  const [userId] = useState(() => createUserId(`user_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`))
+  const [userId, setUserId] = useState<UserId | null>(null)
   const [workflowSuggestion, setWorkflowSuggestion] = useState<{
     type: 'blog' | 'email' | 'social'
     reason: string
@@ -81,8 +82,15 @@ export function ChatInterfaceBase() {
     setWorkflowSuggestion
   })
 
+  // Generate userId on client side only (fixes hydration)
+  useEffect(() => {
+    setUserId(createUserId(`user_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`))
+  }, [])
+
   // Initialize Bilan and start conversation
   useEffect(() => {
+    if (!userId) return // Wait for userId to be set
+    
     let mounted = true
 
     const initializeChat = async () => {

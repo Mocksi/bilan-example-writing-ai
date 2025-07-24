@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ColorSchemeScript, MantineProvider } from '@mantine/core';
+import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -76,7 +76,6 @@ function EnvironmentErrorFallback({ error }: { error: string }) {
   return (
     <html lang="en">
       <head>
-        <ColorSchemeScript />
         <title>Configuration Error - Bilan Content Creation Demo</title>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
@@ -154,7 +153,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <ColorSchemeScript />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

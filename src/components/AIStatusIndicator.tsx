@@ -1,8 +1,8 @@
 'use client'
 
-import { Badge, Group, Text, Tooltip, Alert } from '@mantine/core'
+import { Badge, Group, Text, Tooltip, Alert, Button } from '@mantine/core'
 import { useEffect, useState } from 'react'
-import { getAIStatus } from '../lib/ai-client'
+import { getAIStatus, aiClient } from '../lib/ai-client'
 
 /**
  * Real-time AI client status indicator component
@@ -111,6 +111,16 @@ export function AIStatusIndicator() {
     return 'AI not initialized'
   }
 
+  const handleInitializeAI = async () => {
+    try {
+      console.log('Manual AI initialization triggered')
+      await aiClient.initialize()
+      console.log('AI initialization completed')
+    } catch (error) {
+      console.error('AI initialization failed:', error)
+    }
+  }
+
   return (
     <Group gap="xs">
       <Tooltip label={getStatusDescription()}>
@@ -122,6 +132,17 @@ export function AIStatusIndicator() {
           AI: {getStatusText()}
         </Badge>
       </Tooltip>
+      
+      {/* Debug button for manual initialization */}
+      {!status.isInitialized && !status.isLoading && (
+        <Button
+          size="xs"
+          variant="outline"
+          onClick={handleInitializeAI}
+        >
+          Initialize AI
+        </Button>
+      )}
       
       {status.error && (
         <Alert color="red" variant="light">
