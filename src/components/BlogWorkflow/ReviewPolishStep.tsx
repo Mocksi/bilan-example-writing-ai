@@ -86,6 +86,75 @@ export function ReviewPolishStep({
     return finalContent.split(/\s+/).filter(word => word.length > 0).length
   }
 
+  /**
+   * Generates alternative blog post titles using AI based on content analysis
+   * 
+   * This asynchronous function creates compelling, SEO-friendly blog titles by analyzing
+   * the blog content, topic data, and target audience information. It leverages AI content
+   * generation to produce multiple title options and automatically selects the first one
+   * as the default title while tracking the generation process with Bilan analytics.
+   * 
+   * **Core Functionality:**
+   * - Constructs a comprehensive prompt including topic, audience, key points, and content preview
+   * - Generates 3 alternative titles with specific criteria (attention-grabbing, SEO-friendly, audience-appropriate)
+   * - Parses AI response to extract formatted titles using regex pattern matching
+   * - Updates blog title state with the first generated title as default
+   * - Tracks the generation process with Bilan analytics for user interaction insights
+   * - Stores turn ID for potential user feedback/voting on generated titles
+   * 
+   * **Title Generation Criteria:**
+   * 1. Attention-grabbing and clickable for engagement
+   * 2. SEO-friendly with relevant keywords for search optimization  
+   * 3. Appropriate for the specified target audience
+   * 4. Clear about the value/benefit the blog post provides
+   * 
+   * **AI Integration Process:**
+   * 1. Build prompt with topic data, audience info, key points, and content preview (500 chars)
+   * 2. Track AI interaction with Bilan analytics including journey context
+   * 3. Parse structured response format: "TITLE 1: [title]" pattern
+   * 4. Filter and clean title results, removing formatting artifacts
+   * 5. Set first title as default and store turn ID for feedback collection
+   * 
+   * **State Management:**
+   * - Sets `isGeneratingTitle` loading state during AI generation
+   * - Updates `blogTitle` with the first generated title
+   * - Stores `titleTurnId` for potential user voting/feedback
+   * - Maintains loading state regardless of success/failure outcome
+   * 
+   * @async
+   * @function handleGenerateTitle
+   * @returns {Promise<void>} Promise that resolves when title generation completes
+   * 
+   * @throws {Error} AI generation failures, network issues, or parsing errors are caught and logged securely
+   * 
+   * @description
+   * **Security Considerations:**
+   * Error logging is sanitized to prevent exposure of sensitive information such as
+   * API keys, user data, or internal system details while maintaining debugging capability.
+   * 
+   * **Analytics Integration:**
+   * The function uses Bilan's `trackTurn` to capture:
+   * - User intent: 'title-generation'
+   * - Journey step: 'review-polish' 
+   * - Content type: 'blog'
+   * - Turn ID for correlation with user feedback
+   * 
+   * **Future Enhancements:**
+   * Currently logs all generated titles to console for development. Production version
+   * could include UI for user selection among multiple generated title options.
+   * 
+   * @example
+   * ```typescript
+   * // User clicks "Generate Title" button
+   * await handleGenerateTitle()
+   * 
+   * // Results in:
+   * // - blogTitle updated with generated title
+   * // - titleTurnId stored for voting
+   * // - Bilan analytics event tracked
+   * // - Loading state managed automatically
+   * ```
+   */
   const handleGenerateTitle = async () => {
     setIsGeneratingTitle(true)
     
@@ -137,7 +206,9 @@ TITLE 3: [title]`
       }
 
     } catch (error) {
-      console.error('Failed to generate title:', error)
+      // Sanitize error logging to prevent exposure of sensitive information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('Failed to generate title:', errorMessage)
     } finally {
       setIsGeneratingTitle(false)
     }
@@ -182,7 +253,9 @@ Return the polished version while keeping the same section headers and overall o
       setPolishTurnId(turnId)
 
     } catch (error) {
-      console.error('Failed to polish content:', error)
+      // Sanitize error logging to prevent exposure of sensitive information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('Failed to polish content:', errorMessage)
     } finally {
       setIsPolishing(false)
     }
@@ -426,7 +499,9 @@ ${content.replace(/^# (.*$)/gm, '<h1>$1</h1>')
       await vote(titleTurnId, rating, rating === 1 ? 'Good title' : 'Title needs work')
       setTitleVote(rating)
     } catch (error) {
-      console.error('Failed to record title vote:', error)
+      // Sanitize error logging to prevent exposure of sensitive information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('Failed to record title vote:', errorMessage)
     }
   }
 
@@ -436,7 +511,9 @@ ${content.replace(/^# (.*$)/gm, '<h1>$1</h1>')
       await vote(polishTurnId, rating, rating === 1 ? 'Good polish' : 'Polish needs work')
       setPolishVote(rating)
     } catch (error) {
-      console.error('Failed to record polish vote:', error)
+      // Sanitize error logging to prevent exposure of sensitive information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('Failed to record polish vote:', errorMessage)
     }
   }
 
@@ -444,7 +521,9 @@ ${content.replace(/^# (.*$)/gm, '<h1>$1</h1>')
     try {
       onComplete()
     } catch (error) {
-      console.error('Failed to complete workflow:', error)
+      // Sanitize error logging to prevent exposure of sensitive information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('Failed to complete workflow:', errorMessage)
       onComplete() // Complete anyway
     }
   }
