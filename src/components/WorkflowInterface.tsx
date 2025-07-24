@@ -152,14 +152,6 @@ export function WorkflowInterface({
         })
 
         setJourneyId(newJourneyId)
-        
-        // Track first step start
-        if (currentStep) {
-          await trackJourneyStep(newJourneyId, currentStep.id, {
-            completionStatus: 'started',
-            stepData: { stepIndex: 0 }
-          })
-        }
       } catch (err) {
         setError('Failed to initialize workflow. Please try again.')
         console.error('Journey initialization failed:', err)
@@ -169,7 +161,27 @@ export function WorkflowInterface({
     }
 
     initializeJourney()
-  }, [contentType, currentStep])
+  }, [contentType])
+
+  /**
+   * Track step changes after journey is initialized
+   */
+  useEffect(() => {
+    const trackStepStart = async () => {
+      if (journeyId && currentStep) {
+        try {
+          await trackJourneyStep(journeyId, currentStep.id, {
+            completionStatus: 'started',
+            stepData: { stepIndex: activeStep }
+          })
+        } catch (err) {
+          console.error('Failed to track step start:', err)
+        }
+      }
+    }
+
+    trackStepStart()
+  }, [journeyId, activeStep, currentStep])
 
   /**
    * Handle step completion
