@@ -189,11 +189,11 @@ describe('Complete Bilan Integration - PR-03', () => {
         expect.stringContaining('Great response!')
       )
       
-           // Verify enhanced comment includes metadata
-     const [, , enhancedComment] = vi.mocked(mockVote).mock.calls[0]
-     expect(enhancedComment).toContain('metadata:')
-     expect(enhancedComment).toContain('feedbackType":"accept')
-     expect(enhancedComment).toContain('acceptanceLevel":"as_is')
+      // Verify enhanced comment includes metadata
+      const [, , enhancedComment] = vi.mocked(mockVote).mock.calls[0]
+      expect(enhancedComment).toContain('metadata:')
+      expect(enhancedComment).toContain('feedbackType":"accept')
+      expect(enhancedComment).toContain('acceptanceLevel":"as_is')
     })
   })
 
@@ -202,9 +202,9 @@ describe('Complete Bilan Integration - PR-03', () => {
       await initializeBilan(testUserId)
     })
 
-         it('should manage complete conversation lifecycle', async () => {
-       const { startConversation: mockStartConv, track: mockTrack } = await import('@mocksi/bilan-sdk')
-       vi.mocked(mockStartConv).mockResolvedValue('conversation_abc123')
+    it('should manage complete conversation lifecycle', async () => {
+      const { startConversation: mockStartConv, track: mockTrack } = await import('@mocksi/bilan-sdk')
+      vi.mocked(mockStartConv).mockResolvedValue('conversation_abc123')
       
       // Start conversation with metadata
       const conversationId = await startConversation({
