@@ -123,7 +123,7 @@ export function ChatInterface() {
         })
       }
     }
-  }, [userId, conversationId, checkModelStatus]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [userId, conversationId, checkModelStatus])
 
   if (error) {
     return (
