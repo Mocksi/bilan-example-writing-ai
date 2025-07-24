@@ -297,6 +297,26 @@ interface ActiveConversation {
 
 let activeConversations = new Map<string, ActiveConversation>()
 
+// Memory management constants
+const MAX_CONVERSATION_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
+const MAX_JOURNEY_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+const CLEANUP_INTERVAL_MS = 60 * 60 * 1000 // 1 hour
+
+// Periodic cleanup for conversations
+function cleanupStaleConversations(): void {
+  const now = Date.now()
+  for (const [id, conv] of activeConversations) {
+    if (now - conv.startTime > MAX_CONVERSATION_AGE_MS) {
+      activeConversations.delete(id)
+    }
+  }
+}
+
+// Start periodic cleanup
+if (typeof window === 'undefined') { // Server-side only
+  setInterval(cleanupStaleConversations, CLEANUP_INTERVAL_MS)
+}
+
 /**
  * Enhanced conversation start with state management
  * Following .cursorrules conversation lifecycle pattern
@@ -444,6 +464,21 @@ interface ActiveJourney {
 }
 
 let activeJourneys = new Map<string, ActiveJourney>()
+
+// Periodic cleanup for journeys
+function cleanupStaleJourneys(): void {
+  const now = Date.now()
+  for (const [id, journey] of activeJourneys) {
+    if (now - journey.startTime > MAX_JOURNEY_AGE_MS) {
+      activeJourneys.delete(id)
+    }
+  }
+}
+
+// Start periodic cleanup for journeys
+if (typeof window === 'undefined') { // Server-side only
+  setInterval(cleanupStaleJourneys, CLEANUP_INTERVAL_MS)
+}
 
 /**
  * Start a new content creation journey
