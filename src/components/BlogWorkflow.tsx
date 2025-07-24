@@ -22,10 +22,56 @@ import { SectionWritingStep, type SectionWritingData } from './BlogWorkflow/Sect
 import { ReviewPolishStep, type ReviewPolishData } from './BlogWorkflow/ReviewPolishStep'
 
 /**
- * Blog workflow step definitions following the implementation plan
+ * Blog workflow step definitions representing the structured content creation process
+ * 
+ * This union type defines the four sequential steps in the blog creation journey,
+ * following the implementation plan for comprehensive content development. Each step
+ * represents a distinct phase with specific inputs, outputs, and user interactions
+ * that progressively build toward a complete blog post.
+ * 
+ * @type {BlogWorkflowStep}
+ * @property {'topic-exploration'} topic-exploration - Initial step for discovering and refining blog topics through conversation
+ * @property {'outline-generation'} outline-generation - Second step for creating structured blog outlines with AI assistance
+ * @property {'section-writing'} section-writing - Third step for writing individual sections using multiple creation methods
+ * @property {'review-polish'} review-polish - Final step for reviewing, editing, and exporting the completed blog post
+ * 
+ * @example
+ * ```typescript
+ * const currentStep: BlogWorkflowStep = 'topic-exploration'
+ * const nextStep: BlogWorkflowStep = 'outline-generation'
+ * ```
  */
 export type BlogWorkflowStep = 'topic-exploration' | 'outline-generation' | 'section-writing' | 'review-polish'
 
+/**
+ * Complete state management interface for the blog creation workflow
+ * 
+ * This interface represents the comprehensive state of a blog creation session,
+ * including current progress, completed steps, generated content data, and
+ * analytics tracking information. It serves as the central data structure
+ * that orchestrates the entire workflow and preserves user progress.
+ * 
+ * @interface BlogWorkflowState
+ * @property {BlogWorkflowStep | 'completed'} currentStep - The currently active workflow step or 'completed' if finished
+ * @property {BlogWorkflowStep[]} completedSteps - Array of steps that have been successfully completed by the user
+ * @property {string} journeyId - Unique Bilan journey identifier for analytics tracking and step correlation
+ * @property {SessionId} [sessionId] - Optional session identifier for content persistence and user tracking
+ * @property {TopicExplorationData} [topicData] - Data from topic exploration step: topic, audience, key points, tone
+ * @property {OutlineGenerationData} [outlineData] - Data from outline generation step: structured outline and sections
+ * @property {SectionWritingData} [sectionsData] - Data from section writing step: individual section content and metadata
+ * @property {ReviewPolishData} [reviewData] - Data from review polish step: final content, satisfaction, and export info
+ * 
+ * @example
+ * ```typescript
+ * const workflowState: BlogWorkflowState = {
+ *   currentStep: 'section-writing',
+ *   completedSteps: ['topic-exploration', 'outline-generation'],
+ *   journeyId: 'journey_abc123',
+ *   topicData: { topic: 'AI in Healthcare', audience: 'Developers', ... },
+ *   outlineData: { outline: '1. Introduction...', sections: [...], ... }
+ * }
+ * ```
+ */
 export interface BlogWorkflowState {
   currentStep: BlogWorkflowStep | 'completed'
   completedSteps: BlogWorkflowStep[]
@@ -37,6 +83,42 @@ export interface BlogWorkflowState {
   reviewData?: ReviewPolishData
 }
 
+/**
+ * Props interface for the BlogWorkflow component
+ * 
+ * Defines the required and optional properties for the main BlogWorkflow component
+ * that orchestrates the complete blog creation process. This component manages
+ * step progression, state coordination, and user interaction throughout the
+ * structured content creation journey.
+ * 
+ * @interface BlogWorkflowProps
+ * @property {ContentType} contentType - Type of content being created ('blog', 'email', 'social') for context and analytics
+ * @property {function} onBack - Callback function invoked when user clicks back button to return to content selection
+ * @property {function} [onComplete] - Optional callback invoked when workflow completes, receives final BlogWorkflowState
+ * 
+ * @description
+ * **Component Usage:**
+ * The BlogWorkflow component uses these props to:
+ * - Configure content-specific prompts and instructions based on contentType
+ * - Provide navigation back to the main content selection interface
+ * - Handle workflow completion and pass results to parent components
+ * 
+ * **Callback Patterns:**
+ * - `onBack`: Typically navigates to home/selection page using Next.js router
+ * - `onComplete`: Receives complete workflow state for result processing, analytics, or navigation
+ * 
+ * @example
+ * ```typescript
+ * <BlogWorkflow
+ *   contentType="blog"
+ *   onBack={() => router.push('/')}
+ *   onComplete={(result) => {
+ *     console.log('Blog created:', result.topicData?.topic)
+ *     // Handle completion logic
+ *   }}
+ * />
+ * ```
+ */
 export interface BlogWorkflowProps {
   contentType: ContentType
   onBack: () => void
