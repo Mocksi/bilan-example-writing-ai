@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { CopilotKit } from '@copilotkit/react-core'
 import { CopilotChat } from '@copilotkit/react-ui'
 import {
@@ -64,6 +64,9 @@ export function ChatInterfaceBase() {
   } | null>(null)
   const router = useRouter()
 
+  // Use ref to track current conversation ID for cleanup without dependency issues
+  const conversationIdRef = useRef<string>('')
+
   // Extract model status management to custom hook
   const { modelProgress, modelStatus, statusMessage, checkModelStatus } = useModelStatus()
   
@@ -101,6 +104,7 @@ export function ChatInterfaceBase() {
         
         if (mounted) {
           setConversationId(convId)
+          conversationIdRef.current = convId // Update ref for cleanup
           setIsLoading(false)
         }
       } catch (err) {
@@ -116,8 +120,9 @@ export function ChatInterfaceBase() {
 
     return () => {
       mounted = false
-      if (conversationId) {
-        endConversation(conversationId, 'completed', {
+      // Use ref to get latest conversation ID for cleanup
+      if (conversationIdRef.current) {
+        endConversation(conversationIdRef.current, 'completed', {
           satisfactionScore: 5,
           outcome: 'natural-completion'
         }).catch(() => {
@@ -125,7 +130,7 @@ export function ChatInterfaceBase() {
         })
       }
     }
-  }, [userId, conversationId, checkModelStatus])
+  }, [userId, checkModelStatus])
 
   if (error) {
     return (
