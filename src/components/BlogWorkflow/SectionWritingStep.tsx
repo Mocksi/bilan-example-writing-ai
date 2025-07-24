@@ -658,6 +658,87 @@ Please generate a polished section (200-400 words) that incorporates the ideas w
     return sections.filter(section => section.status === 'complete').length
   }
 
+  /**
+   * Records user feedback vote on a specific section's AI-generated content
+   * 
+   * This asynchronous function handles user satisfaction voting for individual blog sections,
+   * allowing users to rate the quality and usefulness of AI-generated section content.
+   * It integrates with Bilan analytics to track user satisfaction patterns and updates
+   * the local section state to reflect the user's feedback for UI display purposes.
+   * 
+   * **Core Functionality:**
+   * - Validates section existence and turnId availability before proceeding with vote
+   * - Submits user rating to Bilan analytics with contextual feedback message
+   * - Updates local sections state to reflect user vote for immediate UI feedback
+   * - Provides standardized feedback messages based on positive/negative ratings
+   * - Handles voting failures gracefully without disrupting the user workflow
+   * 
+   * **Voting Process:**
+   * 1. **Section Validation**: Verify section exists at specified index and has valid turnId
+   * 2. **Bilan Integration**: Submit vote with rating and contextual feedback message
+   * 3. **State Update**: Update sections array to include userVote for UI display
+   * 4. **Error Handling**: Log failures securely while maintaining workflow continuity
+   * 
+   * **Feedback Context:**
+   * The function provides standardized feedback messages to give context to the rating:
+   * - Positive rating (1): "Helpful section" - indicates content met user expectations
+   * - Negative rating (-1): "Could be better" - indicates content needs improvement
+   * 
+   * **State Management:**
+   * Updates the sections array by mapping over existing sections and updating only
+   * the target section with the userVote property, preserving all other section data
+   * and maintaining immutable state updates for React re-rendering.
+   * 
+   * **Analytics Integration:**
+   * The vote is correlated with the original content generation turnId from Bilan,
+   * enabling analysis of:
+   * - User satisfaction patterns across different section types
+   * - Content quality metrics for AI improvement
+   * - User engagement and feedback frequency
+   * - Section-specific performance insights
+   * 
+   * @async
+   * @function handleVoteOnSection
+   * @param {number} sectionIndex - Zero-based index of the section in the sections array to vote on
+   * @param {1 | -1} rating - User satisfaction rating (1 for positive/helpful, -1 for negative/needs improvement)
+   * @returns {Promise<void>} Promise that resolves when vote is recorded and state is updated
+   * 
+   * @throws {Error} Vote submission failures or state update errors are caught and logged securely
+   * 
+   * @description
+   * **Security Considerations:**
+   * Error logging is sanitized to prevent exposure of sensitive information such as
+   * API credentials, user content, or internal system details while maintaining
+   * debugging capability for development and troubleshooting purposes.
+   * 
+   * **Early Return Conditions:**
+   * The function returns early without processing if:
+   * - Section at specified index doesn't exist
+   * - Section doesn't have a valid turnId (indicating no AI generation occurred)
+   * 
+   * **UI Integration:**
+   * The userVote property added to section state enables:
+   * - Visual indication of voted sections in the UI
+   * - Prevention of duplicate voting on the same section
+   * - User feedback confirmation and interaction history
+   * 
+   * @example
+   * ```typescript
+   * // User clicks thumbs up on section 2
+   * await handleVoteOnSection(2, 1)
+   * // Results in:
+   * // - Bilan vote recorded with "Helpful section" message
+   * // - sections[2].userVote set to 1
+   * // - UI updates to show positive feedback
+   * 
+   * // User clicks thumbs down on section 0  
+   * await handleVoteOnSection(0, -1)
+   * // Results in:
+   * // - Bilan vote recorded with "Could be better" message
+   * // - sections[0].userVote set to -1
+   * // - UI updates to show negative feedback
+   * ```
+   */
   const handleVoteOnSection = async (sectionIndex: number, rating: 1 | -1) => {
     const section = sections[sectionIndex]
     if (!section?.turnId) return
@@ -668,7 +749,9 @@ Please generate a polished section (200-400 words) that incorporates the ideas w
         i === sectionIndex ? { ...s, userVote: rating } : s
       ))
     } catch (error) {
-      console.error('Failed to record vote:', error)
+      // Sanitize error logging to prevent exposure of sensitive information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('Failed to record vote:', errorMessage)
     }
   }
 
