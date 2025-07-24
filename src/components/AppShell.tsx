@@ -19,7 +19,9 @@ import {
   IconPencil,
   IconLanguage,
   IconBulb,
-  IconFileText
+  IconFileText,
+  IconMail,
+  IconBrandTwitter
 } from '@tabler/icons-react'
 import { ReactNode, useState } from 'react'
 import { AIStatusIndicator } from './AIStatusIndicator'
@@ -266,7 +268,7 @@ export function AppShell({ children }: AppShellProps) {
               <Button
                 variant="light"
                 justify="flex-start"
-                leftSection="📝"
+                leftSection={<IconPencil size={16} />}
                 fullWidth
                 onClick={() => console.log('Navigate to blog workflow')}
               >
@@ -275,7 +277,7 @@ export function AppShell({ children }: AppShellProps) {
               <Button
                 variant="light"
                 justify="flex-start"
-                leftSection="📧"
+                leftSection={<IconMail size={16} />}
                 fullWidth
                 onClick={() => console.log('Navigate to email workflow')}
               >
@@ -284,7 +286,7 @@ export function AppShell({ children }: AppShellProps) {
               <Button
                 variant="light"
                 justify="flex-start"
-                leftSection="📱"
+                leftSection={<IconBrandTwitter size={16} />}
                 fullWidth
                 onClick={() => console.log('Navigate to social workflow')}
               >
