@@ -26,6 +26,9 @@ import {
 import { ReactNode, useState } from 'react'
 import { AIStatusIndicator } from './AIStatusIndicator'
 import { QuickActionModal, type QuickAction } from './QuickActionModal'
+import { useQuickActions } from '../hooks/useQuickActions'
+import { vote, track } from '../lib/bilan'
+import { trackQuickActionFeedback } from '../lib/quick-action-analytics'
 
 interface AppShellProps {
   children: ReactNode
@@ -46,7 +49,7 @@ interface AppShellProps {
  * single AI interactions that don't require conversation context or journey state.
  * Each action can be triggered independently and tracked as individual turns.
  */
-const quickActions: QuickAction[] = [
+const quickActionsData: QuickAction[] = [
   {
     id: 'summarize',
     label: 'Summarize Text',
@@ -125,8 +128,7 @@ const quickActions: QuickAction[] = [
 export function AppShell({ children }: AppShellProps) {
   const [opened, { toggle }] = useDisclosure()
   const [activeTab, setActiveTab] = useState<string>('workflows')
-  const [quickActionModalOpened, setQuickActionModalOpened] = useState(false)
-  const [selectedAction, setSelectedAction] = useState<QuickAction | null>(null)
+  const quickActions = useQuickActions()
 
   /**
    * Handle analytics dashboard navigation
@@ -148,58 +150,60 @@ export function AppShell({ children }: AppShellProps) {
    * @param {string} actionId - Unique identifier of the selected quick action
    */
   const handleQuickAction = (actionId: string) => {
-    const action = quickActions.find(a => a.id === actionId)
+    const action = quickActionsData.find(a => a.id === actionId)
     if (action) {
-      setSelectedAction(action)
-      setQuickActionModalOpened(true)
-    }
-  }
-
-  /**
-   * Handle quick action submission
-   * 
-   * Processes the selected quick action with user input through AI generation
-   * and tracks it as a standalone turn in Bilan analytics.
-   */
-  const handleQuickActionSubmit = async (actionId: string, input: string) => {
-    try {
-      const response = await fetch('/api/ai/quick-action', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: actionId,
-          input: input,
-          userId: 'demo-user' // TODO: Use actual user ID from auth context
-        }),
+      quickActions.openAction(action)
+      
+      // Track quick action selection event
+      track('quick_action_opened', {
+        action_id: actionId,
+        action_label: action.label,
+        timestamp: Date.now()
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to process quick action')
-      }
-
-      const data = await response.json()
-      return {
-        result: data.result,
-        turnId: data.turnId
-      }
-    } catch (error) {
-      console.error('Quick action submission failed:', error)
-      throw error
     }
   }
 
   /**
    * Handle quick action vote
    * 
-   * Records user feedback for the quick action result using Bilan vote tracking.
+   * Records user feedback for the quick action result using Bilan vote tracking
+   * and enhanced quick action analytics.
    */
   const handleQuickActionVote = async (turnId: string, rating: 1 | -1) => {
-    // TODO: Implement Bilan vote tracking
-    // This will be implemented in commit 3
-    console.log('Vote submitted:', turnId, rating)
+    try {
+      const feedbackTime = Date.now()
+      
+      // Submit vote to Bilan for turn correlation
+      await vote(turnId, rating, undefined, {
+        feedbackType: rating === 1 ? 'accept' : 'reject',
+        responseTime: feedbackTime,
+        action_context: 'quick_action'
+      })
+
+      // Track with enhanced quick action analytics
+      if (quickActions.selectedAction) {
+        await trackQuickActionFeedback(
+          turnId, 
+          quickActions.selectedAction.id, 
+          rating, 
+          feedbackTime
+        )
+      }
+
+      // Track general vote event for analytics
+      await track('quick_action_voted', {
+        turn_id: turnId,
+        rating,
+        vote_timestamp: feedbackTime,
+        context: 'standalone_turn',
+        action_id: quickActions.selectedAction?.id
+      })
+
+      console.log('Vote submitted successfully:', turnId, rating)
+    } catch (error) {
+      console.error('Failed to submit vote:', error)
+      // Don't throw - voting failures shouldn't break user experience
+    }
   }
 
   const handleLogoClick = () => {
@@ -236,7 +240,7 @@ export function AppShell({ children }: AppShellProps) {
 
       <Menu.Dropdown>
         <Menu.Label>AI Tools</Menu.Label>
-        {quickActions.map((action) => (
+        {quickActionsData.map((action) => (
           <Menu.Item
             key={action.id}
             leftSection={action.icon}
@@ -400,13 +404,10 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Quick Action Modal */}
       <QuickActionModal
-        opened={quickActionModalOpened}
-        onClose={() => {
-          setQuickActionModalOpened(false)
-          setSelectedAction(null)
-        }}
-        action={selectedAction}
-        onSubmit={handleQuickActionSubmit}
+        opened={quickActions.isModalOpen}
+        onClose={quickActions.closeAction}
+        action={quickActions.selectedAction}
+        onSubmit={quickActions.processAction}
         onVote={handleQuickActionVote}
       />
     </MantineAppShell>

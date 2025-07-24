@@ -1,5 +1,11 @@
 import { useState } from 'react'
 import type { QuickAction } from '../components/QuickActionModal'
+import { 
+  trackQuickActionStart, 
+  trackQuickActionComplete,
+  trackQuickActionAbandoned,
+  trackQuickActionError 
+} from '../lib/quick-action-analytics'
 
 interface QuickActionHookState {
   isModalOpen: boolean
@@ -42,8 +48,18 @@ export function useQuickActions() {
 
   /**
    * Close quick action modal and reset state
+   * Tracks abandonment if user closes without completing
    */
-  const closeAction = () => {
+  const closeAction = (wasCompleted: boolean = false) => {
+    // Track abandonment if action was started but not completed
+    if (!wasCompleted && state.selectedAction && !state.isProcessing) {
+      trackQuickActionAbandoned(
+        state.selectedAction.id, 
+        state.selectedAction.label, 
+        0 // No input length available at close
+      )
+    }
+
     setState(prev => ({
       ...prev,
       isModalOpen: false,
@@ -53,12 +69,18 @@ export function useQuickActions() {
   }
 
   /**
-   * Process quick action through API
+   * Process quick action through API with comprehensive analytics tracking
    */
   const processAction = async (actionId: string, input: string): Promise<QuickActionResult> => {
     setState(prev => ({ ...prev, isProcessing: true, error: null }))
 
+    const actionLabel = state.selectedAction?.label || actionId
+    const inputLength = input.length
+
     try {
+      // Track action initiation
+      await trackQuickActionStart(actionId, actionLabel, inputLength)
+
       const response = await fetch('/api/ai/quick-action', {
         method: 'POST',
         headers: {
@@ -73,10 +95,19 @@ export function useQuickActions() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to process quick action')
+        const errorMessage = errorData.error || 'Failed to process quick action'
+        
+        // Track error
+        await trackQuickActionError(actionId, actionLabel, errorMessage, inputLength)
+        
+        throw new Error(errorMessage)
       }
 
       const data = await response.json()
+      const outputLength = data.result.length
+
+      // Track successful completion
+      await trackQuickActionComplete(actionId, actionLabel, inputLength, outputLength, data.turnId)
       
       setState(prev => ({ ...prev, isProcessing: false }))
       
@@ -86,6 +117,12 @@ export function useQuickActions() {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      
+      // Track error if not already tracked
+      if (!errorMessage.includes('Failed to process quick action')) {
+        await trackQuickActionError(actionId, actionLabel, errorMessage, inputLength)
+      }
+      
       setState(prev => ({ 
         ...prev, 
         isProcessing: false, 
