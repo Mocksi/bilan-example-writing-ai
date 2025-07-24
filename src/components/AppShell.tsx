@@ -25,6 +25,10 @@ import {
 } from '@tabler/icons-react'
 import { ReactNode, useState } from 'react'
 import { AIStatusIndicator } from './AIStatusIndicator'
+import { QuickActionModal, type QuickAction } from './QuickActionModal'
+import { useQuickActions } from '../hooks/useQuickActions'
+import { vote, track } from '../lib/bilan'
+import { trackQuickActionFeedback } from '../lib/quick-action-analytics'
 
 interface AppShellProps {
   children: ReactNode
@@ -36,19 +40,7 @@ interface AppShellProps {
  * Defines the available quick actions that users can perform as standalone turns
  * (not part of conversations or journeys). Each action represents a single AI
  * interaction with immediate results.
- * 
- * @interface QuickAction
- * @property {string} id - Unique identifier for the action
- * @property {string} label - User-facing display name
- * @property {string} description - Brief explanation of what the action does
- * @property {ReactNode} icon - Icon component for visual identification
  */
-interface QuickAction {
-  id: string
-  label: string
-  description: string
-  icon: ReactNode
-}
 
 /**
  * Available quick actions for standalone AI turns
@@ -57,30 +49,38 @@ interface QuickAction {
  * single AI interactions that don't require conversation context or journey state.
  * Each action can be triggered independently and tracked as individual turns.
  */
-const quickActions: QuickAction[] = [
+const quickActionsData: QuickAction[] = [
   {
     id: 'summarize',
     label: 'Summarize Text',
     description: 'Create concise summaries of long content',
-    icon: <IconFileText size={16} />
+    icon: <IconFileText size={16} />,
+    placeholder: 'Paste the text you want to summarize here...',
+    maxLength: 4000
   },
   {
     id: 'grammar',
     label: 'Fix Grammar',
     description: 'Correct grammar and improve clarity',
-    icon: <IconPencil size={16} />
+    icon: <IconPencil size={16} />,
+    placeholder: 'Enter text that needs grammar correction...',
+    maxLength: 2000
   },
   {
     id: 'translate',
     label: 'Translate',
     description: 'Translate text to different languages',
-    icon: <IconLanguage size={16} />
+    icon: <IconLanguage size={16} />,
+    placeholder: 'Enter text to translate (specify target language in your text)...',
+    maxLength: 1500
   },
   {
     id: 'brainstorm',
     label: 'Generate Ideas',
     description: 'Brainstorm creative ideas and concepts',
-    icon: <IconBulb size={16} />
+    icon: <IconBulb size={16} />,
+    placeholder: 'Describe what you need ideas for...',
+    maxLength: 1000
   }
 ]
 
@@ -128,6 +128,7 @@ const quickActions: QuickAction[] = [
 export function AppShell({ children }: AppShellProps) {
   const [opened, { toggle }] = useDisclosure()
   const [activeTab, setActiveTab] = useState<string>('workflows')
+  const quickActions = useQuickActions()
 
   /**
    * Handle analytics dashboard navigation
@@ -149,8 +150,60 @@ export function AppShell({ children }: AppShellProps) {
    * @param {string} actionId - Unique identifier of the selected quick action
    */
   const handleQuickAction = (actionId: string) => {
-    // TODO: Implement quick action handlers for standalone turns
-    console.log('Quick action selected:', actionId)
+    const action = quickActionsData.find(a => a.id === actionId)
+    if (action) {
+      quickActions.openAction(action)
+      
+      // Track quick action selection event
+      track('quick_action_opened', {
+        action_id: actionId,
+        action_label: action.label,
+        timestamp: Date.now()
+      })
+    }
+  }
+
+  /**
+   * Handle quick action vote
+   * 
+   * Records user feedback for the quick action result using Bilan vote tracking
+   * and enhanced quick action analytics.
+   */
+  const handleQuickActionVote = async (turnId: string, rating: 1 | -1) => {
+    try {
+      const feedbackTime = Date.now()
+      
+      // Submit vote to Bilan for turn correlation
+      await vote(turnId, rating, undefined, {
+        feedbackType: rating === 1 ? 'accept' : 'reject',
+        responseTime: feedbackTime,
+        action_context: 'quick_action'
+      })
+
+      // Track with enhanced quick action analytics
+      if (quickActions.selectedAction) {
+        await trackQuickActionFeedback(
+          turnId, 
+          quickActions.selectedAction.id, 
+          rating, 
+          feedbackTime
+        )
+      }
+
+      // Track general vote event for analytics
+      await track('quick_action_voted', {
+        turn_id: turnId,
+        rating,
+        vote_timestamp: feedbackTime,
+        context: 'standalone_turn',
+        action_id: quickActions.selectedAction?.id
+      })
+
+      console.log('Vote submitted successfully:', turnId, rating)
+    } catch (error) {
+      console.error('Failed to submit vote:', error)
+      // Don't throw - voting failures shouldn't break user experience
+    }
   }
 
   const handleLogoClick = () => {
@@ -187,7 +240,7 @@ export function AppShell({ children }: AppShellProps) {
 
       <Menu.Dropdown>
         <Menu.Label>AI Tools</Menu.Label>
-        {quickActions.map((action) => (
+        {quickActionsData.map((action) => (
           <Menu.Item
             key={action.id}
             leftSection={action.icon}
@@ -348,6 +401,15 @@ export function AppShell({ children }: AppShellProps) {
       </MantineAppShell.Navbar>
 
       <MantineAppShell.Main>{children}</MantineAppShell.Main>
+
+      {/* Quick Action Modal */}
+      <QuickActionModal
+        opened={quickActions.isModalOpen}
+        onClose={quickActions.closeAction}
+        action={quickActions.selectedAction}
+        onSubmit={quickActions.processAction}
+        onVote={handleQuickActionVote}
+      />
     </MantineAppShell>
   )
 }

@@ -38,22 +38,16 @@
  * @see {@link https://basarat.gitbook.io/typescript/main-1/barrel} for barrel export patterns
  */
 
-// Layout and Structure Components
-export { AppShell } from './AppShell'
-export { ErrorBoundary, withErrorBoundary } from './ErrorBoundary'
-
-// Content Components  
-export { ContentTypeCard } from './ContentTypeCard'
-export { WorkflowSelector } from './WorkflowSelector'
-export { ChatInterface } from './ChatInterface'
-
-// Status and Indicator Components
 export { AIStatusIndicator } from './AIStatusIndicator'
-
-// Loading and State Components
+export { AppShell } from './AppShell'
+export { ChatInterface } from './ChatInterface'
+export { ContentTypeCard } from './ContentTypeCard'
+export { ErrorBoundary } from './ErrorBoundary'
 export { 
   LoadingSkeleton, 
   ContentGenerationLoading, 
   PageLoading, 
   ContentCardSkeleton 
-} from './LoadingState' 
+} from './LoadingState'
+export { WorkflowSelector } from './WorkflowSelector'
+export { QuickActionModal } from './QuickActionModal' 
