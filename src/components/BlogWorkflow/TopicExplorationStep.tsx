@@ -432,6 +432,124 @@ Do not include any explanation or additional text - only the JSON object.`
     )
   }
 
+  /**
+   * Finalizes the topic exploration process and triggers workflow progression
+   * 
+   * This asynchronous function serves as the completion handler for the topic exploration
+   * workflow step, responsible for validating topic readiness, ending active conversations,
+   * aggregating all exploration data into a structured format, and triggering advancement
+   * to the next workflow step through the onComplete callback.
+   * 
+   * **Core Functionality:**
+   * - Validates that a meaningful topic has been defined before allowing completion
+   * - Gracefully ends active AI conversation sessions with completion status and metadata
+   * - Aggregates all topic exploration data into structured TopicExplorationData format
+   * - Invokes parent component callback to trigger workflow progression
+   * - Handles completion errors gracefully with secure logging to maintain user experience
+   * 
+   * **Completion Process:**
+   * 1. **Topic Validation**: Verify topic exists and contains meaningful content (early return if empty)
+   * 2. **Conversation Closure**: End active conversation session if one exists with success metadata
+   * 3. **Data Aggregation**: Compile exploration results into TopicExplorationData object
+   * 4. **Callback Invocation**: Call onComplete to pass data to parent and advance workflow
+   * 5. **Error Handling**: Catch and log any completion failures without disrupting user flow
+   * 
+   * **Data Aggregation Logic:**
+   * The function constructs a comprehensive TopicExplorationData object containing:
+   * - **topic**: Trimmed final topic string ensuring no leading/trailing whitespace
+   * - **audience**: Target audience or fallback to 'General audience' if not specified
+   * - **keyPoints**: Selected key points array, falling back to first 3 suggested points if none selected
+   * - **tone**: User-selected writing tone for content consistency
+   * - **initialBrief**: First user message from conversation for context preservation
+   * - **conversationHistory**: Complete conversation log with role and content mapping
+   * 
+   * **Conversation Management:**
+   * If an active conversation exists (conversationId is set), the function:
+   * - Calls endConversation with 'completed' status indicating successful conclusion
+   * - Includes satisfaction score of 1 assuming positive completion
+   * - Sets outcome to 'topic-defined' for analytics categorization
+   * - Passes final topic for conversation outcome tracking
+   * 
+   * **Early Return Behavior:**
+   * The function implements validation by returning early if no topic content
+   * exists, preventing workflow progression with incomplete data and maintaining
+   * user experience by requiring meaningful topic definition before advancement.
+   * 
+   * **Workflow Integration:**
+   * This completion handler integrates with the broader blog workflow by:
+   * - Preserving all topic exploration data for subsequent outline generation
+   * - Enabling context-aware outline creation based on defined topic and audience
+   * - Maintaining conversation history for reference throughout workflow
+   * - Providing foundation data for AI-assisted content creation in later steps
+   * 
+   * @async
+   * @function handleComplete
+   * @returns {Promise<void>} Promise that resolves when completion process finishes
+   * 
+   * @throws {Error} Conversation ending failures, data aggregation errors, or callback failures are caught and logged securely
+   * 
+   * @description
+   * **Parameters:**
+   * This function takes no explicit parameters but operates on component state:
+   * - **topic**: Current topic string from component state
+   * - **audience**: Target audience from component state
+   * - **selectedKeyPoints**: User-selected key points array
+   * - **suggestedKeyPoints**: AI-suggested key points for fallback
+   * - **tone**: Selected writing tone
+   * - **messages**: Complete conversation message history
+   * - **conversationId**: Active conversation identifier (if exists)
+   * 
+   * **Error Handling:**
+   * All errors are caught and logged securely to prevent exposure of sensitive
+   * information while maintaining debugging capability. The function continues
+   * execution and user experience is preserved even if conversation ending or
+   * data processing encounters issues.
+   * 
+   * **Key Point Selection Logic:**
+   * The function uses intelligent fallback for key points:
+   * - Primary: Use selectedKeyPoints if user has made selections
+   * - Fallback: Use first 3 suggestedKeyPoints to ensure content direction
+   * - This ensures workflow always proceeds with meaningful content guidance
+   * 
+   * **Data Integrity:**
+   * The function ensures data quality through:
+   * - String trimming to remove whitespace artifacts
+   * - Fallback values for optional fields (audience, keyPoints)
+   * - Conversation history preservation for context maintenance
+   * - Type-safe data structure construction
+   * 
+   * **Analytics Integration:**
+   * The completion process supports analytics through:
+   * - Conversation ending with outcome categorization
+   * - Satisfaction score recording for success measurement
+   * - Topic preservation for content analysis
+   * - Complete data handoff to parent workflow for journey tracking
+   * 
+   * @example
+   * ```typescript
+   * // User clicks "Continue to Outline Generation" after defining topic
+   * await handleComplete()
+   * 
+   * // Function execution flow:
+   * // 1. Validates topic.trim() exists (e.g., "AI in Healthcare")
+   * // 2. Ends conversation if active:
+   * //    endConversation(conversationId, 'completed', {
+   * //      satisfactionScore: 1,
+   * //      outcome: 'topic-defined',
+   * //      finalTopic: "AI in Healthcare"
+   * //    })
+   * // 3. Creates TopicExplorationData:
+   * //    {
+   * //      topic: "AI in Healthcare",
+   * //      audience: "Healthcare Professionals",
+   * //      keyPoints: ["Diagnosis", "Treatment", "Research"],
+   * //      tone: "professional",
+   * //      initialBrief: "I want to write about AI applications...",
+   * //      conversationHistory: [{role: 'user', content: '...'}, ...]
+   * //    }
+   * // 4. Calls onComplete(explorationData) to advance workflow
+   * ```
+   */
   const handleComplete = async () => {
     if (!topic.trim()) {
       return
@@ -459,7 +577,9 @@ Do not include any explanation or additional text - only the JSON object.`
 
       onComplete(explorationData)
     } catch (error) {
-      console.error('Failed to complete topic exploration:', error)
+      // Sanitize error logging to prevent exposure of sensitive information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('Failed to complete topic exploration:', errorMessage)
     }
   }
 
