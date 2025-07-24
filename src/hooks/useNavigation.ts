@@ -129,9 +129,51 @@ export function useNavigation() {
     window.open(bilanDashboardUrl, '_blank', 'noopener,noreferrer')
   }, [])
 
+  /**
+   * Navigate to chat interface for free-form conversations
+   * 
+   * Provides navigation to the conversational AI interface where users can engage
+   * in open-ended dialogue with the AI assistant. This interface demonstrates
+   * Bilan's "conversation" concept through natural back-and-forth interactions
+   * that are tracked as conversation sessions containing multiple turns.
+   * 
+   * The chat interface serves multiple purposes in the Bilan demo:
+   * - Showcases conversation lifecycle management (start/end conversation)
+   * - Demonstrates turn tracking within conversational context
+   * - Allows exploration before transitioning to structured workflows
+   * - Provides help and guidance for content creation tasks
+   * 
+   * @function navigateToChat
+   * @returns {void}
+   * 
+   * @example
+   * ```tsx
+   * const { navigateToChat } = useNavigation()
+   * 
+   * const handleOpenChat = () => {
+   *   navigateToChat() // Navigate to /chat route
+   * }
+   * 
+   * <Button onClick={handleOpenChat}>
+   *   Open Chat Assistant
+   * </Button>
+   * ```
+   * 
+   * @remarks
+   * This navigation function:
+   * - Routes to the `/chat` page for conversational AI interface
+   * - Preserves user context and can transition back to workflows
+   * - Integrates with Bilan conversation tracking automatically
+   * - Supports both standalone conversations and workflow-embedded chat
+   */
+  const navigateToChat = useCallback(() => {
+    router.push('/chat')
+  }, [router])
+
   return {
     navigateToHome,
     navigateToCreator,
-    navigateToAnalytics
+    navigateToAnalytics,
+    navigateToChat
   }
 } 

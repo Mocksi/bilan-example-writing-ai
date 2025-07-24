@@ -1,9 +1,83 @@
 'use client'
 
-import { Container, Title, Text, SimpleGrid, Stack } from '@mantine/core'
+import { Container, Title, Text, SimpleGrid, Stack, Button, Menu, Group, Divider } from '@mantine/core'
 import { ContentTypeCard } from '../components/ContentTypeCard'
-import type { ContentType } from '../types'
+import type { ContentType, QuickActionType, QuickActionConfig } from '../types'
 import { useNavigation } from '../hooks'
+
+/**
+ * Quick Action Tools Configuration - defines available standalone AI tools
+ * 
+ * This configuration array defines the quick action tools available in the home page
+ * dropdown menu. Each tool represents a standalone turn in Bilan tracking, demonstrating
+ * single-purpose AI interactions that don't require conversation context or multi-step
+ * workflows. These tools provide immediate value and showcase turn-based analytics.
+ * 
+ * @remarks
+ * Quick actions demonstrate Bilan's "turn" concept by:
+ * - Tracking individual AI requests/responses without conversation context
+ * - Collecting immediate user feedback through voting mechanisms
+ * - Providing analytics on tool usage patterns and user preferences
+ * - Serving as lightweight entry points to the AI assistant capabilities
+ * 
+ * Each action configuration includes user-facing metadata that drives the dropdown
+ * interface, helping users understand tool capabilities and expected input formats.
+ * 
+ * @example
+ * ```typescript
+ * // Each quick action object structure:
+ * {
+ *   type: 'summarize',                    // Internal identifier for tracking
+ *   title: 'Summarize Text',             // User-facing display name
+ *   description: 'Create concise...',    // Tool purpose explanation
+ *   icon: '📝',                          // Visual identifier
+ *   inputExample: 'Paste long text...',  // User guidance
+ *   outputDescription: 'Concise summary' // Expected result
+ * }
+ * ```
+ */
+const quickActionTools: QuickActionConfig[] = [
+  {
+    type: 'summarize' as QuickActionType,
+    title: 'Summarize Text',
+    description: 'Create concise summaries of long content',
+    icon: '📝',
+    inputExample: 'Paste long text, articles, or documents',
+    outputDescription: 'Concise summary highlighting key points'
+  },
+  {
+    type: 'grammar' as QuickActionType,
+    title: 'Fix Grammar',
+    description: 'Improve grammar, punctuation, and clarity',
+    icon: '✏️',
+    inputExample: 'Text with grammar or punctuation issues',
+    outputDescription: 'Corrected text with explanations'
+  },
+  {
+    type: 'tone' as QuickActionType,
+    title: 'Adjust Tone',
+    description: 'Change writing tone (formal, casual, friendly)',
+    icon: '🎭',
+    inputExample: 'Text to modify with desired tone',
+    outputDescription: 'Rewritten text in requested tone'
+  },
+  {
+    type: 'titles' as QuickActionType,
+    title: 'Generate Titles',
+    description: 'Create compelling titles and headlines',
+    icon: '💡',
+    inputExample: 'Topic or content description',
+    outputDescription: 'Multiple title options to choose from'
+  },
+  {
+    type: 'translate' as QuickActionType,
+    title: 'Translate Content',
+    description: 'Translate text to different languages',
+    icon: '🌍',
+    inputExample: 'Text with target language',
+    outputDescription: 'Accurate translation with context'
+  }
+]
 
 /**
  * Core business logic configuration for AI content generation types
@@ -83,11 +157,76 @@ const contentTypes = [
   }
 ]
 
+/**
+ * Enhanced Home Page component demonstrating all three Bilan concepts
+ * 
+ * This component serves as the main entry point for the Bilan Content Creation Demo,
+ * providing users with three distinct paths that demonstrate different Bilan tracking
+ * concepts: journeys (workflows), conversations (chat), and standalone turns (quick tools).
+ * 
+ * The home page implements the dual-mode interface design from the technical specification,
+ * transforming from a single-purpose workflow selector into a comprehensive AI assistant
+ * entry point that showcases the full range of Bilan SDK capabilities.
+ * 
+ * @component
+ * @returns {JSX.Element} Enhanced home page with workflow cards, chat access, and quick tools
+ * 
+ * @example
+ * ```tsx
+ * // Entry points demonstrate three Bilan concepts:
+ * // 1. Content type cards → Journeys (multi-step workflows)
+ * // 2. Open Chat button → Conversations (dialogue sessions)  
+ * // 3. Quick Tools dropdown → Standalone turns (single AI interactions)
+ * ```
+ * 
+ * @remarks
+ * Key enhancements over the original home page:
+ * - **Chat Integration**: Direct access to conversational AI interface
+ * - **Quick Tools**: Dropdown menu for standalone AI tools and actions
+ * - **Clear Visual Hierarchy**: Three distinct sections for different interaction types
+ * - **Bilan Concept Mapping**: Each UI element maps to specific Bilan tracking concepts
+ * - **Seamless Navigation**: Smooth transitions between different AI interaction modes
+ */
 export default function HomePage() {
-  const { navigateToCreator } = useNavigation()
+  const { navigateToCreator, navigateToChat } = useNavigation()
 
+  /**
+   * Handle content type selection for workflow journeys
+   * 
+   * Navigates users to the content creation workflow interface for the selected
+   * content type. This demonstrates Bilan's "journey" concept through structured,
+   * multi-step content creation processes.
+   */
   const handleContentTypeSelect = (contentType: ContentType) => {
     navigateToCreator(contentType)
+  }
+
+  /**
+   * Handle chat interface navigation
+   * 
+   * Opens the conversational AI interface for free-form dialogue with the AI assistant.
+   * This demonstrates Bilan's "conversation" concept through natural back-and-forth
+   * interactions that are tracked as conversation sessions.
+   */
+  const handleOpenChat = () => {
+    navigateToChat()
+  }
+
+  /**
+   * Handle quick action tool selection
+   * 
+   * Navigates to quick action interface for the selected tool. This demonstrates
+   * Bilan's "turn" concept through standalone AI interactions that don't require
+   * conversation context or multi-step workflows.
+   * 
+   * @param {QuickActionType} actionType - The selected quick action tool
+   * @todo Implement navigation to quick action interface in future PR
+   */
+  const handleQuickAction = (actionType: QuickActionType) => {
+    // TODO: Navigate to quick action interface with selected tool
+    // This will be implemented in a future PR for the quick actions interface
+    // For now, the menu item selection is handled but no navigation occurs
+    void actionType // Acknowledge parameter to prevent unused variable warning
   }
 
   return (
@@ -98,15 +237,60 @@ export default function HomePage() {
         </Title>
         
         <Text size="lg" ta="center" c="dimmed" maw={600}>
-          Choose the type of content you want to create. Our AI assistant will help you 
-          craft compelling content tailored to your needs.
+          Choose how you want to interact with our AI assistant. Create structured content,
+          have open conversations, or use quick tools for immediate assistance.
         </Text>
         
         <Text size="sm" ta="center" c="dimmed">
-          This demo showcases <strong>Bilan SDK integration</strong> with AI content creation workflows.
-          All user interactions are tracked for analytics insights.
+          This demo showcases <strong>Bilan SDK integration</strong> with comprehensive
+          AI interaction tracking across all three core concepts.
         </Text>
+
+        {/* Enhanced Entry Options - Three Clear Paths */}
+        <Group justify="center" gap="md" mt="md">
+          <Button
+            size="lg"
+            leftSection="💬"
+            variant="gradient"
+            gradient={{ from: 'blue', to: 'cyan', deg: 90 }}
+            onClick={handleOpenChat}
+          >
+            Open Chat Assistant
+          </Button>
+
+          <Menu shadow="md" width={300} position="bottom">
+            <Menu.Target>
+              <Button
+                size="lg"
+                leftSection="🛠️"
+                rightSection="▾"
+                variant="light"
+                color="gray"
+              >
+                Quick Tools
+              </Button>
+            </Menu.Target>
+
+            <Menu.Dropdown>
+              <Menu.Label>Standalone AI Tools</Menu.Label>
+              {quickActionTools.map((tool) => (
+                <Menu.Item
+                  key={tool.type}
+                  leftSection={<Text size="sm">{tool.icon}</Text>}
+                  onClick={() => handleQuickAction(tool.type)}
+                >
+                  <div>
+                    <Text size="sm" fw={500}>{tool.title}</Text>
+                    <Text size="xs" c="dimmed">{tool.description}</Text>
+                  </div>
+                </Menu.Item>
+              ))}
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
       </Stack>
+
+      <Divider my="xl" label="Content Creation Workflows" labelPosition="center" />
 
       <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
         {contentTypes.map((type) => (
