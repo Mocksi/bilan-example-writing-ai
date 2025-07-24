@@ -341,6 +341,89 @@ ESTIMATED_WORD_COUNT: [Provide an estimate for the full blog post]`
     }
   }
 
+  /**
+   * Records user satisfaction vote for the AI-generated blog outline
+   * 
+   * This asynchronous function handles user feedback voting on the quality and usefulness
+   * of the AI-generated outline content. It integrates with Bilan analytics to capture
+   * user satisfaction data and updates the local component state to reflect the user's
+   * rating for immediate UI feedback and vote persistence.
+   * 
+   * **Core Functionality:**
+   * - Validates turnId availability from outline generation before processing vote
+   * - Submits user rating to Bilan analytics with contextual feedback message
+   * - Updates local userVote state for UI display and interaction tracking
+   * - Provides standardized feedback messages based on positive/negative ratings
+   * - Handles voting errors gracefully without disrupting the outline workflow
+   * 
+   * **Voting Process:**
+   * 1. **Turn Validation**: Verify valid turnId exists from previous outline generation
+   * 2. **Bilan Integration**: Submit vote with rating and descriptive feedback message
+   * 3. **State Update**: Update userVote state for immediate UI feedback display
+   * 4. **Error Handling**: Log failures securely while maintaining workflow continuity
+   * 
+   * **Feedback Messages:**
+   * The function provides contextual feedback to give meaning to the numeric rating:
+   * - **Positive rating (1)**: "Helpful outline" - indicates outline met user expectations
+   * - **Negative rating (-1)**: "Could be better" - indicates outline needs improvement
+   * 
+   * **State Management:**
+   * Updates the userVote state to reflect the user's satisfaction rating, enabling:
+   * - Visual indication of voting status in the UI (thumbs up/down highlighting)
+   * - Prevention of duplicate voting through UI state management
+   * - Persistence of user feedback throughout the outline generation session
+   * 
+   * **Analytics Integration:**
+   * The vote is correlated with the original outline generation turnId from Bilan,
+   * enabling comprehensive analysis of:
+   * - User satisfaction patterns for outline quality assessment
+   * - Content effectiveness metrics for AI model improvement
+   * - User engagement levels and feedback frequency
+   * - Outline generation performance and user experience insights
+   * 
+   * @async
+   * @function handleVote
+   * @param {1 | -1} rating - User satisfaction rating (1 for positive/helpful, -1 for negative/needs improvement)
+   * @returns {Promise<void>} Promise that resolves when vote is recorded and state is updated
+   * 
+   * @throws {Error} Vote submission failures or state update errors are caught and logged securely
+   * 
+   * @description
+   * **Security Considerations:**
+   * Error logging uses sanitized approach to prevent exposure of sensitive information
+   * including API credentials, user data, or internal system details while maintaining
+   * debugging capability for development and troubleshooting purposes.
+   * 
+   * **Early Return Behavior:**
+   * The function returns early without processing if no turnId is available,
+   * which occurs when:
+   * - No outline has been generated yet
+   * - Outline generation failed without creating a turn
+   * - Component state was reset or corrupted
+   * 
+   * **UI Integration:**
+   * The userVote state update enables:
+   * - Immediate visual feedback showing which rating was selected
+   * - Disabled state for vote buttons after voting to prevent duplicates
+   * - Persistent indication of user satisfaction throughout the session
+   * 
+   * @example
+   * ```typescript
+   * // User clicks thumbs up button on generated outline
+   * await handleVote(1)
+   * // Results in:
+   * // - Bilan vote recorded with "Helpful outline" message
+   * // - userVote state set to 1
+   * // - UI shows positive feedback indication
+   * 
+   * // User clicks thumbs down button on generated outline
+   * await handleVote(-1)
+   * // Results in:
+   * // - Bilan vote recorded with "Could be better" message
+   * // - userVote state set to -1
+   * // - UI shows negative feedback indication
+   * ```
+   */
   const handleVote = async (rating: 1 | -1) => {
     if (!turnId) return
     
@@ -348,7 +431,9 @@ ESTIMATED_WORD_COUNT: [Provide an estimate for the full blog post]`
       await vote(turnId, rating, rating === 1 ? 'Helpful outline' : 'Could be better')
       setUserVote(rating)
     } catch (error) {
-      console.error('Failed to record vote:', error)
+      // Sanitize error logging to prevent exposure of sensitive information
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('Failed to record vote:', errorMessage)
     }
   }
 
