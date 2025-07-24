@@ -634,6 +634,113 @@ Please generate a polished section (200-400 words) that incorporates the ideas w
     }
   }
 
+  /**
+   * Handles manual editing of section content with automatic word count and status updates
+   * 
+   * This function processes user-initiated direct edits to section content through text input
+   * fields or text areas, automatically calculating word count, updating section status based
+   * on content presence, and marking the section as manually edited. It provides real-time
+   * content management for the section writing workflow step.
+   * 
+   * **Core Functionality:**
+   * - Updates section content with user-provided text input
+   * - Calculates accurate word count using whitespace splitting and filtering
+   * - Automatically determines section status based on content presence
+   * - Marks section method as 'manual' to distinguish from AI-generated content
+   * - Preserves all other section properties while updating modified fields
+   * 
+   * **Content Processing:**
+   * 1. **Word Count Calculation**: Splits content by whitespace and filters empty strings
+   * 2. **Content Assignment**: Updates section content with provided text
+   * 3. **Status Determination**: Sets status to 'complete' if content exists, 'draft' if empty
+   * 4. **Method Tracking**: Records 'manual' method to track content creation approach
+   * 5. **State Update**: Immutably updates sections array preserving other sections
+   * 
+   * **Status Logic:**
+   * The function applies intelligent status determination:
+   * - **'complete'**: When content.trim() returns truthy (has meaningful content)
+   * - **'draft'**: When content.trim() is falsy (empty or whitespace-only)
+   * 
+   * **Word Count Algorithm:**
+   * Uses robust word counting by:
+   * - Splitting content on any whitespace characters (/\s+/ regex)
+   * - Filtering out empty strings to avoid counting extra spaces
+   * - Providing accurate count for content planning and progress tracking
+   * 
+   * **State Management:**
+   * Updates sections array using immutable pattern:
+   * - Maps over existing sections array
+   * - Updates only the target section at specified index
+   * - Preserves all other section data (title, turnId, etc.)
+   * - Maintains React state consistency for proper re-rendering
+   * 
+   * **Method Tracking Benefits:**
+   * Setting method to 'manual' enables:
+   * - Analytics tracking of content creation approaches
+   * - UI differentiation between manual and AI-generated content
+   * - User workflow pattern analysis
+   * - Content quality comparison between creation methods
+   * 
+   * @function handleManualEdit
+   * @param {number} sectionIndex - Zero-based index of the section to edit in the sections array
+   * @param {string} content - New content text provided by user input (can be empty string)
+   * @returns {void} No return value - function performs state updates through setSections
+   * 
+   * @description
+   * **Parameter Details:**
+   * - **sectionIndex**: Must be valid array index (0 to sections.length-1) identifying
+   *   which section to update. Invalid indices are handled gracefully by React's
+   *   array mapping without throwing errors.
+   * - **content**: Raw text content from user input, including potential leading/trailing
+   *   whitespace. Function handles trimming for status determination while preserving
+   *   original content for user editing experience.
+   * 
+   * **UI Integration:**
+   * This function is typically called from:
+   * - Textarea onChange events for direct content editing
+   * - Rich text editor content change handlers
+   * - Form input validation and processing
+   * - Real-time content synchronization systems
+   * 
+   * **Performance Considerations:**
+   * The function performs minimal processing (word counting and string operations)
+   * making it suitable for real-time editing scenarios like onChange events without
+   * causing performance issues or input lag.
+   * 
+   * **Workflow Integration:**
+   * Manual editing integrates seamlessly with other section creation methods:
+   * - Preserves section structure and metadata
+   * - Maintains compatibility with AI-generated content workflow
+   * - Supports mixed content creation approaches within same document
+   * - Enables user refinement of AI-generated sections
+   * 
+   * @example
+   * ```typescript
+   * // User types in textarea for section 1
+   * handleManualEdit(1, "This is my introduction paragraph with several words.")
+   * 
+   * // Results in section update:
+   * // sections[1] = {
+   * //   ...previousSectionData,
+   * //   content: "This is my introduction paragraph with several words.",
+   * //   wordCount: 9,
+   * //   status: 'complete',
+   * //   method: 'manual'
+   * // }
+   * 
+   * // User clears content
+   * handleManualEdit(1, "   ")
+   * 
+   * // Results in section update:
+   * // sections[1] = {
+   * //   ...previousSectionData,
+   * //   content: "   ",
+   * //   wordCount: 0,
+   * //   status: 'draft',
+   * //   method: 'manual'
+   * // }
+   * ```
+   */
   const handleManualEdit = (sectionIndex: number, content: string) => {
     const wordCount = content.split(/\s+/).filter(word => word.length > 0).length
     
