@@ -27,6 +27,14 @@ interface TokenResponse {
 /**
  * Generate Bilan client token
  * POST /api/bilan-token
+ * 
+ * @param request - Next.js request object
+ * @param request.body.userId - Required user identifier
+ * @param request.body.sessionId - Optional session identifier
+ * @param request.body.metadata - Optional metadata object
+ * @returns {NextResponse<TokenResponse>} Token response with token, expiration, and config
+ * @throws {400} When userId is missing
+ * @throws {500} When token generation fails
  */
 export async function POST(request: NextRequest) {
   try {
