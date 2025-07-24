@@ -194,6 +194,68 @@ export function BlogWorkflow({ contentType, onBack, onComplete }: BlogWorkflowPr
     initializeJourney()
   }, [contentType])
 
+  /**
+   * Handles the completion of a workflow step with state management and analytics tracking
+   * 
+   * This asynchronous function orchestrates the critical workflow progression logic when a user
+   * completes any step in the blog creation process. It coordinates state updates, data persistence,
+   * Bilan analytics tracking, and automatic progression to the next workflow step.
+   * 
+   * **Core Functionality:**
+   * - Marks the current step as completed in the workflow state
+   * - Tracks step completion with Bilan analytics for journey progression
+   * - Updates workflow state with step-specific data using type-safe assignment
+   * - Automatically initiates the next workflow step or marks workflow as completed
+   * - Provides comprehensive error handling for step completion failures
+   * 
+   * **Data Flow Process:**
+   * 1. Add completed step to the completedSteps array
+   * 2. Track step completion event with Bilan including step data
+   * 3. Determine next step in sequence using getNextStep helper
+   * 4. Update currentStep to next step or 'completed' if at end
+   * 5. Assign incoming data to appropriate state property based on step type
+   * 6. Track next step initiation with Bilan if workflow continues
+   * 
+   * **State Management:**
+   * The function uses a switch statement to assign step data to the correct property:
+   * - `topic-exploration` → `topicData` (TopicExplorationData)
+   * - `outline-generation` → `outlineData` (OutlineGenerationData) 
+   * - `section-writing` → `sectionsData` (SectionWritingData)
+   * - `review-polish` → `reviewData` (ReviewPolishData)
+   * 
+   * @async
+   * @function handleStepComplete
+   * @param {BlogWorkflowStep} step - The workflow step that was just completed ('topic-exploration' | 'outline-generation' | 'section-writing' | 'review-polish')
+   * @param {unknown} data - The data generated/collected during the completed step, typed as unknown for flexibility then cast to appropriate step data type
+   * 
+   * @throws {Error} Step completion failures, Bilan tracking errors, or state update issues are caught and displayed to user via setError
+   * 
+   * @description
+   * **Error Handling:**
+   * All errors are caught and displayed to the user through the error state, ensuring
+   * graceful degradation if analytics tracking fails or state updates encounter issues.
+   * 
+   * **Analytics Integration:**
+   * The function performs two Bilan tracking calls:
+   * 1. Track completion of the current step with step data
+   * 2. Track initiation of the next step (if workflow continues)
+   * 
+   * @example
+   * ```typescript
+   * // Called when topic exploration step completes
+   * await handleStepComplete('topic-exploration', {
+   *   topic: 'AI in Healthcare',
+   *   audience: 'Healthcare Professionals',
+   *   keyPoints: ['Diagnosis', 'Treatment', 'Research'],
+   *   tone: 'Professional'
+   * })
+   * 
+   * // Results in state update:
+   * // - currentStep: 'outline-generation' 
+   * // - completedSteps: ['topic-exploration']
+   * // - topicData: { topic: 'AI in Healthcare', ... }
+   * ```
+   */
   const handleStepComplete = async (step: BlogWorkflowStep, data: unknown) => {
     try {
       // Mark current step as completed
