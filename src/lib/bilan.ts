@@ -162,44 +162,28 @@ export async function initializeBilan(userId: string): Promise<void> {
                     resource instanceof Request ? resource.url : 'unknown'
         
         if (url.includes('localhost:3002') || url.includes('/api/events')) {
-          console.log('🌐 FETCH Request to Bilan:', {
-            url,
-            method: config?.method || 'GET',
-            hasAuth: config?.headers && 'Authorization' in config.headers,
-            body: config?.body ? (typeof config.body === 'string' ? config.body.substring(0, 100) + '...' : 'non-string body') : undefined
-          })
+          // Log Bilan API requests for debugging
+          let eventCount = 0
+          try {
+            if (config?.body && typeof config.body === 'string') {
+              const parsedBody = JSON.parse(config.body)
+              eventCount = parsedBody?.events?.length || 0
+            }
+          } catch (e) {}
+          
+          console.log(`🌐 → Bilan API: ${config?.method || 'GET'} ${eventCount} events`)
         }
         
         const response = await originalFetch(...args)
         
         if (url.includes('localhost:3002') || url.includes('/api/events')) {
-          console.log('🌐 FETCH Response from Bilan:', {
-            url,
-            status: response.status,
-            ok: response.ok
-          })
+          console.log(`🌐 ← Bilan API: ${response.status} ${response.ok ? '✅' : '❌'}`)
         }
         
         return response
       }
 
-      // Monitor XMLHttpRequest
-      const originalXHROpen = XMLHttpRequest.prototype.open
-      const originalXHRSend = XMLHttpRequest.prototype.send
-      
-      XMLHttpRequest.prototype.open = function(method: string, url: string | URL, async?: boolean, user?: string, password?: string) {
-        if (typeof url === 'string' && (url.includes('localhost:3002') || url.includes('/api/events'))) {
-          console.log('🌐 XHR Request to Bilan:', { method, url })
-          this.addEventListener('load', () => {
-            console.log('🌐 XHR Response from Bilan:', { url, status: this.status, response: this.responseText?.substring(0, 100) })
-          })
-        }
-        return originalXHROpen.call(this, method, url, async ?? true, user, password)
-      }
-      
-      XMLHttpRequest.prototype.send = function(data?: any) {
-        return originalXHRSend.call(this, data)
-      }
+
 
       console.log('🕵️ Network monitoring setup complete')
     }
@@ -230,19 +214,7 @@ export async function initializeBilan(userId: string): Promise<void> {
       })
     }
 
-    // Test if SDK can make network requests by forcing a flush (if available)
-    try {
-      const bilanSdk = await import('@mocksi/bilan-sdk')
-      if ('flush' in bilanSdk && typeof bilanSdk.flush === 'function') {
-        console.log('🧪 Testing SDK network capability by forcing flush...')
-        await bilanSdk.flush()
-        console.log('🧪 Flush completed successfully')
-      } else {
-        console.log('🧪 Flush method not available in this SDK version')
-      }
-    } catch (error) {
-      console.error('🧪 Flush failed:', error)
-    }
+
   } catch (error) {
     // Fire-and-forget: log error but don't throw
     console.warn('Bilan initialization failed:', error)
@@ -300,21 +272,16 @@ export async function trackTurn<T>(
 
     const startTime = Date.now()
     
-    console.log('📊 About to call bilanTrackTurn with:', {
-      prompt: prompt.substring(0, 50) + '...',
-      turnContext,
-      sdkMode: bilanConfig?.mode,
-      sdkEndpoint: bilanConfig?.endpoint
+    console.log('📊 TrackTurn:', {
+      actionType: metadata?.action_type || 'unknown',
+      promptLength: prompt.length,
+      model: metadata?.model || 'unknown'
     })
     
     const response = await bilanTrackTurn(prompt, aiFunction, turnContext)
     const responseTime = Date.now() - startTime
     
-    console.log('📊 bilanTrackTurn returned:', {
-      turnId: response.turnId,
-      responseTime,
-      hasResult: !!response.result
-    })
+    console.log('📊 Turn completed:', response.turnId, `${responseTime}ms`)
 
     // Update conversation turn count if this turn is part of a conversation
     if (metadata?.conversationId) {
@@ -377,17 +344,9 @@ export async function vote(
         voteTimestamp: Date.now()
       })}]` : undefined
 
-    console.log('🗳️ About to call bilanVote with:', {
-      turnId,
-      rating,
-      hasComment: !!enhancedComment,
-      sdkMode: bilanConfig?.mode,
-      sdkEndpoint: bilanConfig?.endpoint
-    })
+    console.log('🗳️ Vote:', turnId, rating === 1 ? '👍' : '👎')
     
     await bilanVote(turnId, rating, enhancedComment)
-    
-    console.log('🗳️ bilanVote completed successfully')
 
     // Log successful vote tracking in debug mode
     if (bilanConfig?.debug) {

@@ -214,6 +214,7 @@ export function useQuickActions() {
       const prompt = buildPromptForAction(actionId, input.trim())
 
       // Process with Bilan-tracked AI call (creates real Bilan turn)
+      const startTime = Date.now()
       const { result, turnId } = await trackTurn(
         prompt,
         async () => {
@@ -224,12 +225,35 @@ export function useQuickActions() {
           return response.text
         },
         {
-          // Quick action metadata
+          // CRITICAL: Core SDK fields (must be at root level)
+          model: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
+          modelUsed: 'Llama-3.2-1B-Instruct-q4f32_1-MLC', // SDK expects this field
+          provider: 'webllm',
+          context: 'quick_action', // SDK context field
+          
+          // Quick action metadata for dashboard display
           action_type: actionId,
+          action_label: actionLabel,
           input_length: input.length,
           standalone_turn: true,
-          provider: 'webllm',
-          model: 'Llama-3.2-1B-Instruct-q4f32_1-MLC'
+          
+          // Session context
+          session_type: 'quick_action',
+          feature: 'content_generation',
+          
+          // User interaction context  
+          user_intent: `${actionLabel} user-provided content`,
+          content_type: 'general',
+          
+          // Timing for dashboard
+          request_timestamp: startTime,
+          
+          // Journey tracking
+          journey_id: 'quick-action-workflow',
+          journey_step: `${actionId}_generation`,
+          
+          // Additional metadata
+          model_version: 'Llama-3.2-1B-Instruct-q4f32_1-MLC'
         }
       )
 
