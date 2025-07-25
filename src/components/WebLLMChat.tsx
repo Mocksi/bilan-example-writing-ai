@@ -45,6 +45,8 @@ export function WebLLMChat({ onClose }: WebLLMChatProps) {
 
   // Initialize everything
   useEffect(() => {
+    let conversationIdRef = ''
+    
     const initialize = async () => {
       try {
         // Generate user ID
@@ -62,6 +64,7 @@ export function WebLLMChat({ onClose }: WebLLMChatProps) {
           source: 'webllm_chat_component'
         })
         setConversationId(convId)
+        conversationIdRef = convId // Store for cleanup
         console.log('🧠 Started conversation:', convId)
 
         // Initialize WebLLM
@@ -83,6 +86,24 @@ export function WebLLMChat({ onClose }: WebLLMChatProps) {
     }
 
     initialize()
+
+    // Cleanup function to end conversation on unmount
+    return () => {
+      if (conversationIdRef) {
+        const cleanupConversation = async () => {
+          try {
+            console.log('🧠 Ending conversation on unmount:', conversationIdRef)
+            await endConversation(conversationIdRef)
+            console.log('🧠 Conversation ended successfully')
+          } catch (error) {
+            console.error('🧠 Failed to end conversation on unmount:', error)
+          }
+        }
+        
+        // Execute cleanup asynchronously
+        cleanupConversation()
+      }
+    }
   }, [])
 
   // Auto-scroll to bottom when messages change
