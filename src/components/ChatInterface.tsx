@@ -157,8 +157,7 @@ export function ChatInterfaceBase() {
       <LoadingOverlay visible={isLoading} overlayProps={{ blur: 2 }} />
       
       {!isLoading && conversationId && (
-        <CopilotKit runtimeUrl="/api/copilot-kit">
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Chat Header with Model Status */}
             <Group p="md" style={{ borderBottom: '1px solid #e9ecef' }} wrap="nowrap">
               <ThemeIcon size="lg" radius="xl" variant="light" color="blue">
@@ -296,7 +295,6 @@ Remember: You can detect workflow needs and suggest smooth transitions while pre
               />
             </div>
           </div>
-        </CopilotKit>
       )}
     </Container>
   )
@@ -321,7 +319,9 @@ Remember: You can detect workflow needs and suggest smooth transitions while pre
 export function ChatInterface() {
   return (
     <ChatErrorBoundary>
-      <ChatInterfaceBase />
+      <CopilotKit runtimeUrl="/api/copilot-kit">
+        <ChatInterfaceBase />
+      </CopilotKit>
     </ChatErrorBoundary>
   )
 } 

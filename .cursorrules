@@ -9,7 +9,7 @@ This is a demonstration application showcasing Bilan's analytics capabilities th
 ## Tech Stack & Architecture
 - **Frontend**: Next.js 14 with App Router + TypeScript
 - **UI Framework**: Mantine v7 (comprehensive components, zero config)
-- **AI Integration**: Ollama + TinyLlama (local inference, no API keys)
+- **AI Integration**: WebLLM (browser-based local inference, no API keys)
 - **Analytics**: Bilan SDK for comprehensive event tracking
 - **Styling**: Mantine's built-in styling system
 - **Deployment**: Template repository for easy cloning and local setup

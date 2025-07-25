@@ -1,9 +1,9 @@
 'use client'
 
-import { Container, Title, Text, SimpleGrid, Stack, Card, Button, Group } from '@mantine/core'
+import { Container, Title, Text, SimpleGrid, Stack, Card, Button, Group, Modal } from '@mantine/core'
 import { useState } from 'react'
 import { QuickActionModal } from '../components/QuickActionModal'
-import { ChatInterface } from '../components/ChatInterface'
+import { WebLLMChat } from '../components/WebLLMChat'
 import { useNavigation, useQuickActions } from '../hooks'
 import { IconLanguage } from '@tabler/icons-react'
 
@@ -188,7 +188,7 @@ export default function HomePage() {
               <Text size="sm" c="dimmed">
                 Each message creates a tracked turn. Conversation ID links all turns together.
               </Text>
-              <ChatInterface />
+              <WebLLMChat onClose={() => setShowChat(false)} />
             </Stack>
           </Card>
         </Container>
