@@ -68,8 +68,10 @@ export class AIClient {
   private config: Required<AIClientConfig>
   private initializationPromise: Promise<void> | null = null
   private webllmModule: WebLLMModule | null = null
+  private hasCustomProgressCallback: boolean = false
 
   constructor(config: AIClientConfig = {}, webllmModule?: WebLLMModule) {
+    this.hasCustomProgressCallback = !!config.progressCallback
     this.config = {
       model: config.model || 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
       maxLength: config.maxLength || 200,
@@ -84,9 +86,11 @@ export class AIClient {
    * Default progress callback for model loading
    */
   private defaultProgressCallback(progress: any) {
-    this.downloadProgress = progress.progress || 0
-    if (this.config.progressCallback && this.config.progressCallback !== this.defaultProgressCallback) {
-      this.config.progressCallback(progress)
+    if (progress && typeof progress === 'object') {
+      this.downloadProgress = progress.progress || 0
+      if (this.hasCustomProgressCallback) {
+        this.config.progressCallback(progress)
+      }
     }
   }
 
@@ -127,7 +131,7 @@ export class AIClient {
       
       // Create WebLLM engine with progress callback
       const engineConfig: MLCEngineConfig = {
-        initProgressCallback: this.defaultProgressCallback,
+        initProgressCallback: this.defaultProgressCallback.bind(this),
         logLevel: 'INFO'
       }
       
@@ -241,6 +245,12 @@ export class AIClient {
    */
   updateConfig(newConfig: Partial<AIClientConfig>): void {
     const oldModel = this.config.model
+    
+    // Update the custom progress callback flag if progressCallback is being changed
+    if (newConfig.progressCallback !== undefined) {
+      this.hasCustomProgressCallback = !!newConfig.progressCallback
+    }
+    
     this.config = { 
       ...this.config, 
       ...newConfig,

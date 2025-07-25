@@ -23,11 +23,11 @@ import {
   IconMail,
   IconBrandTwitter
 } from '@tabler/icons-react'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useState, useEffect } from 'react'
 import { AIStatusIndicator } from './AIStatusIndicator'
 import { QuickActionModal, type QuickAction } from './QuickActionModal'
 import { useQuickActions } from '../hooks/useQuickActions'
-import { vote, track } from '../lib/bilan'
+import { vote, track, initializeBilan, createUserId } from '../lib/bilan'
 import { trackQuickActionFeedback } from '../lib/quick-action-analytics'
 
 interface AppShellProps {
@@ -129,6 +129,21 @@ export function AppShell({ children }: AppShellProps) {
   const [opened, { toggle }] = useDisclosure()
   const [activeTab, setActiveTab] = useState<string>('workflows')
   const quickActions = useQuickActions()
+
+  // Initialize Bilan SDK for the entire app
+  useEffect(() => {
+    const initializeBilanForApp = async () => {
+      try {
+        const userId = createUserId(`user_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`)
+        await initializeBilan(userId)
+        console.log('Bilan initialized in AppShell for user:', userId)
+      } catch (error) {
+        console.warn('Bilan initialization failed in AppShell:', error)
+      }
+    }
+
+    initializeBilanForApp()
+  }, [])
 
   /**
    * Handle analytics dashboard navigation

@@ -6,6 +6,8 @@ import {
   trackQuickActionAbandoned,
   trackQuickActionError 
 } from '../lib/quick-action-analytics'
+import { trackTurn } from '../lib/bilan'
+import { aiClient } from '../lib/ai-client'
 
 /**
  * Custom error classes for robust error handling and tracking
@@ -208,40 +210,39 @@ export function useQuickActions() {
       // Track action initiation
       await trackQuickActionStart(actionId, actionLabel, inputLength)
 
-      const response = await fetch('/api/ai/quick-action', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // Build action-specific prompt
+      const prompt = buildPromptForAction(actionId, input.trim())
+
+      // Process with Bilan-tracked AI call (creates real Bilan turn)
+      const { result, turnId } = await trackTurn(
+        prompt,
+        async () => {
+          const response = await aiClient.generateContent(prompt, {
+            maxLength: getMaxLengthForAction(actionId),
+            temperature: getTemperatureForAction(actionId)
+          })
+          return response.text
         },
-        body: JSON.stringify({
-          action: actionId,
-          input: input,
-          userId: 'demo-user' // TODO: Use actual user ID from auth context
-        }),
-      })
+        {
+          // Quick action metadata
+          action_type: actionId,
+          input_length: input.length,
+          standalone_turn: true,
+          provider: 'webllm',
+          model: 'Llama-3.2-1B-Instruct-q4f32_1-MLC'
+        }
+      )
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        const errorMessage = errorData.error || 'Failed to process quick action'
-        
-        // Track API error and mark as tracked
-        await trackQuickActionError(actionId, actionLabel, errorMessage, inputLength)
-        trackingCompleted = true
-        
-        throw new QuickActionAPIError(errorMessage, response.status, true)
-      }
-
-      const data = await response.json()
-      const outputLength = data.result.length
+      const outputLength = result.length
 
       // Track successful completion
-      await trackQuickActionComplete(actionId, actionLabel, inputLength, outputLength, data.turnId)
+      await trackQuickActionComplete(actionId, actionLabel, inputLength, outputLength, turnId)
       
       setState(prev => ({ ...prev, isProcessing: false }))
       
       return {
-        result: data.result,
-        turnId: data.turnId
+        result: result,
+        turnId: turnId
       }
     } catch (error) {
       let finalError: QuickActionError
@@ -289,4 +290,46 @@ export function useQuickActions() {
     closeAction,
     processAction
   }
+}
+
+/**
+ * Helper functions for quick action processing
+ */
+function buildPromptForAction(actionId: string, input: string): string {
+  const prompts: Record<string, string> = {
+    grammar_fix: `Please fix any grammar, spelling, or punctuation errors in the following text. Only return the corrected text without additional commentary:\n\n${input}`,
+    summarize: `Please provide a concise summary of the following text:\n\n${input}`,
+    translate: `Please translate the following text to English (if it's not already in English, otherwise translate to Spanish):\n\n${input}`,
+    brainstorm: `Please provide 5 creative ideas related to:\n\n${input}`,
+    simplify: `Please rewrite the following text to make it simpler and easier to understand:\n\n${input}`,
+    expand: `Please expand on the following topic with more detail and examples:\n\n${input}`
+  }
+  
+  return prompts[actionId] || `Please help with: ${input}`
+}
+
+function getMaxLengthForAction(actionId: string): number {
+  const lengths: Record<string, number> = {
+    grammar_fix: 500,
+    summarize: 200,
+    translate: 300,
+    brainstorm: 400,
+    simplify: 300,
+    expand: 600
+  }
+  
+  return lengths[actionId] || 300
+}
+
+function getTemperatureForAction(actionId: string): number {
+  const temperatures: Record<string, number> = {
+    grammar_fix: 0.1, // Low creativity for grammar fixes
+    summarize: 0.3,   
+    translate: 0.2,   // Low creativity for translation
+    brainstorm: 0.8,  // High creativity for brainstorming
+    simplify: 0.4,
+    expand: 0.6       // Moderate creativity for expansion
+  }
+  
+  return temperatures[actionId] || 0.5
 } 

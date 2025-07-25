@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { env } from '@/lib/env'
+import { env, getEnvVar } from '@/lib/env'
 
 /**
  * Bilan Token Authentication API
@@ -87,9 +87,18 @@ async function generateBilanToken(
   metadata: Record<string, any> = {}
 ): Promise<string> {
   // ⚠️ SECURITY WARNING: This is a DEMO implementation only!
-  // In demo mode, generate a simple JWT-style token
-  // In production, this would integrate with your auth system
   
+  // For server mode, return the raw API key that the server expects
+  if (env.BILAN_MODE === 'server') {
+    const apiKey = getEnvVar('NEXT_PUBLIC_BILAN_API_KEY')
+    if (!apiKey) {
+      throw new Error('NEXT_PUBLIC_BILAN_API_KEY is required for server mode')
+    }
+    console.log('🔑 Returning raw API key for server mode:', apiKey)
+    return apiKey
+  }
+  
+  // For local mode, generate a custom token (legacy behavior)
   const payload = {
     userId,
     sessionId,
