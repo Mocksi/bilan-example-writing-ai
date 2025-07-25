@@ -144,7 +144,7 @@ export async function initializeBilan(userId: string): Promise<void> {
     console.log('🔑 API Key details:', {
       hasApiKey: !!apiKey,
       apiKeyLength: apiKey ? apiKey.length : 0,
-      apiKeyPrefix: apiKey ? apiKey.substring(0, 20) + '...' : 'none',
+      apiKeyStatus: apiKey ? '[REDACTED-FOR-SECURITY]' : 'none',
       configMode: initConfig.mode,
       willPassApiKey: bilanConfig.mode === 'server'
     })
