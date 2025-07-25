@@ -11,20 +11,22 @@ const nextConfig: NextConfig = {
       config.devtool = 'eval-cheap-module-source-map';
       
       // Disable CSS source map generation to prevent 404s
-      const rules = config.module.rules.find((rule: any) => typeof rule.oneOf === 'object');
-      if (rules && rules.oneOf) {
-        rules.oneOf.forEach((rule: any) => {
-          if (rule.use && Array.isArray(rule.use)) {
-            rule.use.forEach((use: any) => {
-              if (use.loader && use.loader.includes('css-loader')) {
-                if (use.options) {
-                  use.options.sourceMap = false;
-                }
+      const disableCSSSourceMaps = (rules: any[]): void => {
+        rules.forEach(rule => {
+          if (rule.oneOf) {
+            disableCSSSourceMaps(rule.oneOf);
+          } else if (rule.use) {
+            const uses = Array.isArray(rule.use) ? rule.use : [rule.use];
+            uses.forEach((use: any) => {
+              if (use.loader?.includes?.('css-loader')) {
+                use.options = { ...use.options, sourceMap: false };
               }
             });
           }
         });
-      }
+      };
+      
+      disableCSSSourceMaps(config.module.rules);
     }
     
     // Ensure WebLLM is only loaded on client-side to avoid SSR issues
