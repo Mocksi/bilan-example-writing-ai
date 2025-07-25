@@ -79,6 +79,24 @@ export default function HomePage() {
   const [showChat, setShowChat] = useState(false)
   const quickActions = useQuickActions()
 
+  // Handle voting on quick action results
+  const handleQuickActionVote = async (turnId: string, rating: 1 | -1) => {
+    try {
+      // Import vote function from bilan
+      const { vote } = await import('../lib/bilan')
+      
+      // Submit vote to Bilan
+      await vote(turnId, rating, undefined, {
+        feedbackType: rating === 1 ? 'accept' : 'reject',
+        action_context: 'quick_action_demo'
+      })
+
+      console.log('Vote submitted successfully:', turnId, rating)
+    } catch (error) {
+      console.error('Failed to submit vote:', error)
+    }
+  }
+
   const handleDemoSelect = (demoId: string) => {
     switch (demoId) {
       case 'quick-action':
@@ -153,6 +171,7 @@ export default function HomePage() {
         onClose={quickActions.closeAction}
         action={quickActions.selectedAction}
         onSubmit={quickActions.processAction}
+        onVote={handleQuickActionVote}
       />
 
       {/* Chat Interface - Conversation Demo */}
