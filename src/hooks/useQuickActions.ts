@@ -10,6 +10,11 @@ import { trackTurn } from '../lib/bilan'
 import { aiClient } from '../lib/ai-client'
 
 /**
+ * WebLLM model configuration
+ */
+const WEBLLM_MODEL_NAME = 'Llama-3.2-1B-Instruct-q4f32_1-MLC'
+
+/**
  * Custom error classes for robust error handling and tracking
  */
 class QuickActionError extends Error {
@@ -226,8 +231,8 @@ export function useQuickActions() {
         },
         {
           // CRITICAL: Core SDK fields (must be at root level)
-          model: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
-          modelUsed: 'Llama-3.2-1B-Instruct-q4f32_1-MLC', // SDK expects this field
+          model: WEBLLM_MODEL_NAME,
+          modelUsed: WEBLLM_MODEL_NAME, // SDK expects this field
           provider: 'webllm',
           context: 'quick_action', // SDK context field
           
@@ -249,7 +254,7 @@ export function useQuickActions() {
           request_timestamp: startTime,
           
           // Additional metadata
-          model_version: 'Llama-3.2-1B-Instruct-q4f32_1-MLC'
+          model_version: WEBLLM_MODEL_NAME
         }
       )
 
