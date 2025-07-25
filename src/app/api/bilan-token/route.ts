@@ -94,7 +94,7 @@ async function generateBilanToken(
     if (!apiKey) {
       throw new Error('NEXT_PUBLIC_BILAN_API_KEY is required for server mode')
     }
-    console.log('🔑 Returning raw API key for server mode:', apiKey)
+    console.log('🔑 Returning API key for server mode:', `${apiKey.slice(0, 4)}***${apiKey.slice(-4)}`)
     return apiKey
   }
   
