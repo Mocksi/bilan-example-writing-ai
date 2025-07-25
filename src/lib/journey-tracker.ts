@@ -43,6 +43,7 @@ export class JourneyTracker {
   private stepData: Record<string, any>
   private isCompleted: boolean
   private totalSteps: number
+  private handleUnload: ((event: BeforeUnloadEvent) => void) | null
 
   constructor(
     private journeyName: string,
@@ -61,6 +62,7 @@ export class JourneyTracker {
     this.stepData = {}
     this.isCompleted = false
     this.totalSteps = totalSteps
+    this.handleUnload = null
 
     // Try to restore from saved state
     this.restoreState()
@@ -203,9 +205,22 @@ export class JourneyTracker {
   }
 
   /**
+   * Clean up abandonment tracking by removing the beforeunload event listener
+   */
+  private cleanupAbandonmentTracking(): void {
+    if (typeof window !== 'undefined' && this.handleUnload) {
+      window.removeEventListener('beforeunload', this.handleUnload)
+      this.handleUnload = null
+    }
+  }
+
+  /**
    * Complete the journey
    */
   async complete(outcome: 'completed' | 'abandoned' = 'completed', metadata: Record<string, any> = {}): Promise<void> {
+    // Clean up abandonment tracking
+    this.cleanupAbandonmentTracking()
+    
     const totalAttempts = Array.from(this.stepAttempts.values()).reduce((a, b) => a + b, 0)
     const duration = Date.now() - this.startTime
 
@@ -346,7 +361,8 @@ export class JourneyTracker {
   private setupAbandonmentTracking(): void {
     if (typeof window === 'undefined') return
 
-    const handleUnload = () => {
+    // Store handleUnload as class property for cleanup management
+    this.handleUnload = () => {
       if (!this.isCompleted && this.currentStep > 0) {
         // Use sendBeacon for reliability
         const payload = {
@@ -367,14 +383,7 @@ export class JourneyTracker {
       }
     }
 
-    window.addEventListener('beforeunload', handleUnload)
-    
-    // Clean up on completion
-    const originalComplete = this.complete.bind(this)
-    this.complete = async (...args) => {
-      window.removeEventListener('beforeunload', handleUnload)
-      return originalComplete(...args)
-    }
+    window.addEventListener('beforeunload', this.handleUnload)
   }
 
   /**
