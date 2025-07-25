@@ -9,7 +9,7 @@ export interface EnvironmentConfig {
   // Bilan configuration
   BILAN_ENDPOINT?: string
   BILAN_MODE: 'local' | 'server'
-  NEXT_PUBLIC_BILAN_API_KEY?: string
+  BILAN_API_KEY?: string
   
   // Development flags
   DEBUG: boolean
@@ -49,7 +49,7 @@ export function getEnvironmentConfig(): EnvironmentConfig {
       }
       return mode as 'local' | 'server';
     })(),
-    NEXT_PUBLIC_BILAN_API_KEY: getEnvVar('NEXT_PUBLIC_BILAN_API_KEY'), // Server-side only, not NEXT_PUBLIC_
+    BILAN_API_KEY: getEnvVar('BILAN_API_KEY'), // Server-side only - no NEXT_PUBLIC_ prefix
     
     // Development flags
     DEBUG: getEnvVar('NEXT_PUBLIC_DEBUG', 'false') === 'true',
@@ -64,8 +64,8 @@ export function getEnvironmentConfig(): EnvironmentConfig {
   if (config.BILAN_MODE === 'server' && !config.BILAN_ENDPOINT) {
     throw new Error('BILAN_ENDPOINT is required when BILAN_MODE is "server"')
   }
-  if (config.BILAN_MODE === 'server' && !config.NEXT_PUBLIC_BILAN_API_KEY) {
-    throw new Error('NEXT_PUBLIC_BILAN_API_KEY is required when BILAN_MODE is "server"')
+  if (config.BILAN_MODE === 'server' && !config.BILAN_API_KEY) {
+    throw new Error('BILAN_API_KEY is required when BILAN_MODE is "server"')
   }
   
   return config

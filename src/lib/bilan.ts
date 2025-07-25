@@ -112,9 +112,9 @@ export async function initializeBilan(userId: string): Promise<void> {
     currentUserId = createUserId(userId)
 
     // NEW in v0.4.2: Validate apiKey for server mode
-    const apiKey = getEnvVar('NEXT_PUBLIC_BILAN_API_KEY') || bilanConfig.token
+    const apiKey = getEnvVar('BILAN_API_KEY') || bilanConfig.token
     if (bilanConfig.mode === 'server' && !apiKey) {
-      throw new Error('NEXT_PUBLIC_BILAN_API_KEY is required for server mode in SDK v0.4.2+')
+      throw new Error('BILAN_API_KEY is required for server mode in SDK v0.4.2+')
     }
 
     // Initialize the actual Bilan SDK with required apiKey for server mode
@@ -209,7 +209,7 @@ export async function initializeBilan(userId: string): Promise<void> {
       console.info('✅ Bilan SDK v0.4.2 initialized successfully', { 
         mode: bilanConfig.mode, 
         endpoint: bilanConfig.endpoint,
-        hasApiKey: bilanConfig.mode === 'server' ? !!getEnvVar('NEXT_PUBLIC_BILAN_API_KEY') : 'N/A',
+        hasApiKey: bilanConfig.mode === 'server' ? !!getEnvVar('BILAN_API_KEY') : 'N/A',
         actualSDKConfig: actualConfig
       })
     }

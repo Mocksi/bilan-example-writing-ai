@@ -13,7 +13,7 @@ import { env, getEnvVar } from '@/lib/env'
  * 
  * Environment Variables Required:
  * - BILAN_TOKEN_API_SECRET: Secret token for API authorization
- * - NEXT_PUBLIC_BILAN_API_KEY: Bilan API key to return to authorized clients
+ * - BILAN_API_KEY: Bilan API key to return to authorized clients
  * 
  * Usage:
  * POST /api/bilan-token
@@ -124,9 +124,9 @@ async function generateBilanToken(
   // For server mode, return the raw API key that the server expects
   // This is only secure because we've verified authorization in the POST handler
   if (env.BILAN_MODE === 'server') {
-    const apiKey = getEnvVar('NEXT_PUBLIC_BILAN_API_KEY')
+    const apiKey = getEnvVar('BILAN_API_KEY')
     if (!apiKey) {
-      throw new Error('NEXT_PUBLIC_BILAN_API_KEY is required for server mode')
+      throw new Error('BILAN_API_KEY is required for server mode')
     }
     // API key is returned directly to authorized clients only
     return apiKey
