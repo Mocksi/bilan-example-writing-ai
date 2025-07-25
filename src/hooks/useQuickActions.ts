@@ -248,10 +248,6 @@ export function useQuickActions() {
           // Timing for dashboard
           request_timestamp: startTime,
           
-          // Journey tracking
-          journey_id: 'quick-action-workflow',
-          journey_step: `${actionId}_generation`,
-          
           // Additional metadata
           model_version: 'Llama-3.2-1B-Instruct-q4f32_1-MLC'
         }
