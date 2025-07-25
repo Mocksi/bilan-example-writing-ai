@@ -17,6 +17,49 @@ export type AcceptanceLevel = 'as_is' | 'light_edit' | 'heavy_edit' | 'inspirati
 export type SessionStatus = 'active' | 'completed' | 'abandoned'
 
 /**
+ * Quick Action Types - standalone AI tools for immediate assistance
+ * 
+ * These represent single-turn AI interactions that don't require conversation
+ * context or multi-step workflows. Each quick action demonstrates Bilan's
+ * "turn" concept as standalone AI interactions that can be tracked independently.
+ * 
+ * @remarks
+ * Quick actions serve as entry points to demonstrate:
+ * - Standalone turn tracking without conversation or journey context
+ * - Immediate feedback collection through vote mechanisms
+ * - Single-purpose AI tool interactions
+ * - User preference learning for specific action types
+ */
+export type QuickActionType = 
+  | 'summarize'      // Summarize text content
+  | 'grammar'        // Fix grammar and punctuation
+  | 'tone'           // Change tone (formal, casual, friendly, etc.)
+  | 'titles'         // Generate titles for content
+  | 'translate'      // Translate content to different languages
+
+/**
+ * Quick Action Configuration - defines available quick action tools
+ * 
+ * Each quick action has metadata that describes its purpose, expected input,
+ * and user-facing presentation. This configuration drives the quick tools
+ * dropdown interface and helps users understand what each tool does.
+ */
+export interface QuickActionConfig {
+  /** Unique identifier for the quick action type */
+  type: QuickActionType
+  /** User-facing display name for the action */
+  title: string
+  /** Brief description explaining what the action does */
+  description: string
+  /** Icon emoji for visual identification */
+  icon: string
+  /** Example of typical input this action expects */
+  inputExample: string
+  /** Short description of expected output */
+  outputDescription: string
+}
+
+/**
  * Content Session - represents a complete content creation session
  */
 export interface ContentSession {
