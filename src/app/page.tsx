@@ -1,11 +1,11 @@
 'use client'
 
-import { Container, Title, Text, SimpleGrid, Stack, Card, Button, Group, Modal, Textarea, Badge } from '@mantine/core'
+import { Container, Title, Text, SimpleGrid, Stack, Card, Button, Group } from '@mantine/core'
 import { useState } from 'react'
-import { IconThumbUp, IconThumbDown, IconLanguage } from '@tabler/icons-react'
+import { QuickActionModal } from '../components/QuickActionModal'
 import { ChatInterface } from '../components/ChatInterface'
 import { useNavigation, useQuickActions } from '../hooks'
-import { LoadingState } from '../components/LoadingState'
+import { IconLanguage } from '@tabler/icons-react'
 
 /**
  * Core business logic configuration for AI content generation types
@@ -76,13 +76,21 @@ const demoCards = [
 
 export default function HomePage() {
   const { navigateToCreator } = useNavigation()
-  const [showQuickAction, setShowQuickAction] = useState(false)
   const [showChat, setShowChat] = useState(false)
+  const quickActions = useQuickActions()
 
   const handleDemoSelect = (demoId: string) => {
     switch (demoId) {
       case 'quick-action':
-        setShowQuickAction(true)
+        // Open translation quick action
+        quickActions.openAction({
+          id: 'translate',
+          label: 'Translate',
+          description: 'Translate text to any language',
+          icon: <IconLanguage size={16} />,
+          placeholder: 'Enter text to translate and specify target language...',
+          maxLength: 3000
+        })
         break
       case 'conversation':
         setShowChat(true)
@@ -139,17 +147,13 @@ export default function HomePage() {
         ))}
       </SimpleGrid>
 
-      {/* Quick Action Modal - Single Turn Demo */}
-      {showQuickAction && (
-        <Modal
-          opened={showQuickAction}
-          onClose={() => setShowQuickAction(false)}
-          title="Translation Demo - Single Turn Pattern"
-          size="lg"
-        >
-          <TranslationQuickAction />
-        </Modal>
-      )}
+      {/* Quick Action Modal - Managed by useQuickActions hook */}
+      <QuickActionModal
+        opened={quickActions.isModalOpen}
+        onClose={quickActions.closeAction}
+        action={quickActions.selectedAction}
+        onSubmit={quickActions.processAction}
+      />
 
       {/* Chat Interface - Conversation Demo */}
       {showChat && (
