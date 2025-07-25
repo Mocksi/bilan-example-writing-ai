@@ -15,9 +15,7 @@
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@copilotkit/react-core": "^1.9.3",
-    "@copilotkit/react-ui": "^1.9.3",
-    "@copilotkit/runtime": "^1.9.3",
+
     "@mantine/core": "^8.2.1",
     "@mantine/form": "^8.2.1",
     "@mantine/hooks": "^8.2.1",
@@ -26,7 +24,6 @@
     "@mocksi/bilan-sdk": "^0.4.2",
     "@tabler/icons-react": "^3.34.1",
     "next": "15.4.3",
-    "openai": "^4.104.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-markdown": "^10.1.0",
