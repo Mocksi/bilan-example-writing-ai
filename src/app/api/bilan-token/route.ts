@@ -4,8 +4,21 @@ import { env, getEnvVar } from '@/lib/env'
 /**
  * Bilan Token Authentication API
  * 
- * Generates secure client tokens for Bilan SDK integration
- * Following .cursorrules for server-side token generation with client management
+ * Generates secure client tokens for Bilan SDK integration.
+ * 
+ * SECURITY: This endpoint now requires proper authorization:
+ * - Must include 'Authorization: Bearer <token>' header
+ * - Token must match BILAN_TOKEN_API_SECRET environment variable
+ * - Returns 401 Unauthorized for invalid/missing tokens
+ * 
+ * Environment Variables Required:
+ * - BILAN_TOKEN_API_SECRET: Secret token for API authorization
+ * - NEXT_PUBLIC_BILAN_API_KEY: Bilan API key to return to authorized clients
+ * 
+ * Usage:
+ * POST /api/bilan-token
+ * Headers: { "Authorization": "Bearer your-secret-token" }
+ * Body: { "userId": "user123", "sessionId": "session456" }
  */
 
 interface TokenRequest {
@@ -38,6 +51,25 @@ interface TokenResponse {
  */
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Verify authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Bearer token required' },
+        { status: 401 }
+      )
+    }
+
+    // SECURITY: Validate the bearer token (simple check for demo)
+    const authToken = authHeader.slice(7) // Remove 'Bearer ' prefix
+    const validToken = process.env.BILAN_TOKEN_API_SECRET
+    if (!validToken || authToken !== validToken) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Invalid token' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json() as TokenRequest
     const { userId, sessionId, metadata = {} } = body
 
@@ -79,22 +111,24 @@ export async function POST(request: NextRequest) {
 
 /**
  * Server-side token generation for Bilan SDK
- * Following template repository pattern for easy customization
+ * 
+ * ⚠️ SECURITY WARNING: This is a DEMO implementation only!
+ * In production, implement proper JWT token generation, rotation, and validation.
+ * This function should only be called after proper authentication/authorization.
  */
 async function generateBilanToken(
   userId: string, 
   sessionId?: string, 
   metadata: Record<string, any> = {}
 ): Promise<string> {
-  // ⚠️ SECURITY WARNING: This is a DEMO implementation only!
-  
   // For server mode, return the raw API key that the server expects
+  // This is only secure because we've verified authorization in the POST handler
   if (env.BILAN_MODE === 'server') {
     const apiKey = getEnvVar('NEXT_PUBLIC_BILAN_API_KEY')
     if (!apiKey) {
       throw new Error('NEXT_PUBLIC_BILAN_API_KEY is required for server mode')
     }
-    console.log('🔑 Returning API key for server mode:', `${apiKey.slice(0, 4)}***${apiKey.slice(-4)}`)
+    // API key is returned directly to authorized clients only
     return apiKey
   }
   
