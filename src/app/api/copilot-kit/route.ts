@@ -13,10 +13,16 @@ import OpenAI from 'openai'
  * until we can integrate WebLLM properly.
  */
 
+// Configuration constants for mock OpenAI instance
+const MOCK_CONFIG = {
+  API_KEY: process.env.OPENAI_API_KEY || 'mock-development-key',
+  BASE_URL: process.env.OPENAI_BASE_URL || 'http://localhost:3000'
+} as const
+
 // Mock OpenAI instance for CopilotKit
 const openai = new OpenAI({
-  apiKey: 'mock-key', // Not used
-  baseURL: 'http://localhost:3000' // Not used
+  apiKey: MOCK_CONFIG.API_KEY, // Not used in mock implementation
+  baseURL: MOCK_CONFIG.BASE_URL // Not used in mock implementation
 })
 
 // Override the chat completions method to return our mock responses
