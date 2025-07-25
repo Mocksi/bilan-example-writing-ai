@@ -1,6 +1,7 @@
 'use client'
 
 import { Container, Title, Text, SimpleGrid, Stack, Card, Button, Group, Modal } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
 import { QuickActionModal } from '../components/QuickActionModal'
 import { WebLLMChat } from '../components/WebLLMChat'
@@ -91,9 +92,24 @@ export default function HomePage() {
         action_context: 'quick_action_demo'
       })
 
+      // Show success notification
+      notifications.show({
+        title: 'Feedback Submitted',
+        message: `Your ${rating === 1 ? 'positive' : 'negative'} feedback has been recorded successfully`,
+        color: 'green'
+      })
+
       console.log('Vote submitted successfully:', turnId, rating)
     } catch (error) {
       console.error('Failed to submit vote:', error)
+      
+      // Show error notification to user
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit your feedback'
+      notifications.show({
+        title: 'Feedback Failed',
+        message: `Unable to submit your feedback: ${errorMessage}. Please try again.`,
+        color: 'red'
+      })
     }
   }
 
