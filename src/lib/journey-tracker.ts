@@ -281,7 +281,7 @@ export class JourneyTracker {
       }
     }
 
-    localStorage.setItem(`journey_${this.sessionId}`, JSON.stringify(state))
+    localStorage.setItem(`journey_${this.journeyName}_${this.sessionId}`, JSON.stringify(state))
   }
 
   /**
@@ -290,9 +290,10 @@ export class JourneyTracker {
   private restoreState(): boolean {
     if (typeof window === 'undefined') return false
 
-    // Look for any active journey of this type
+    // Look for any active journey of this type using precise pattern matching
+    const keyPrefix = `journey_${this.journeyName}_`
     const keys = Object.keys(localStorage).filter(k => 
-      k.startsWith('journey_') && k.includes(this.journeyName)
+      k.startsWith(keyPrefix)
     )
 
     if (keys.length === 0) return false
@@ -336,7 +337,7 @@ export class JourneyTracker {
    */
   private clearState(): void {
     if (typeof window === 'undefined') return
-    localStorage.removeItem(`journey_${this.sessionId}`)
+    localStorage.removeItem(`journey_${this.journeyName}_${this.sessionId}`)
   }
 
   /**
