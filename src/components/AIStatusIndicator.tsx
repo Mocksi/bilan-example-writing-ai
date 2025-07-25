@@ -1,6 +1,7 @@
 'use client'
 
-import { Badge, Group, Text, Tooltip, Alert, Button } from '@mantine/core'
+import { Badge, Group, Text, Tooltip, Alert, Button, Loader } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
 import { useEffect, useState } from 'react'
 import { getAIStatus, aiClient } from '../lib/ai-client'
 
@@ -37,6 +38,9 @@ export function AIStatusIndicator() {
     model: 'unknown',
     error: undefined as string | undefined
   })
+  
+  // Separate loading state for manual initialization to prevent multiple clicks
+  const [isInitializing, setIsInitializing] = useState(false)
 
   useEffect(() => {
     /**
@@ -112,12 +116,51 @@ export function AIStatusIndicator() {
   }
 
   const handleInitializeAI = async () => {
+    if (isInitializing) return // Prevent multiple simultaneous initializations
+    
+    setIsInitializing(true)
+    
     try {
       console.log('Manual AI initialization triggered')
+      
+      // Show initialization started notification
+      notifications.show({
+        id: 'ai-init',
+        title: 'Initializing AI',
+        message: 'Loading AI model, please wait...',
+        color: 'blue',
+        loading: true,
+        autoClose: false
+      })
+      
       await aiClient.initialize()
+      
+      // Show success notification
+      notifications.update({
+        id: 'ai-init',
+        title: 'AI Ready',
+        message: 'AI model has been successfully initialized and is ready to use',
+        color: 'green',
+        loading: false,
+        autoClose: 3000
+      })
+      
       console.log('AI initialization completed')
     } catch (error) {
       console.error('AI initialization failed:', error)
+      
+      // Show error notification
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      notifications.update({
+        id: 'ai-init',
+        title: 'AI Initialization Failed',
+        message: `Failed to initialize AI model: ${errorMessage}. Please try again.`,
+        color: 'red',
+        loading: false,
+        autoClose: 5000
+      })
+    } finally {
+      setIsInitializing(false)
     }
   }
 
@@ -139,8 +182,10 @@ export function AIStatusIndicator() {
           size="xs"
           variant="outline"
           onClick={handleInitializeAI}
+          disabled={isInitializing}
+          leftSection={isInitializing ? <Loader size="xs" /> : undefined}
         >
-          Initialize AI
+          {isInitializing ? 'Initializing...' : 'Initialize AI'}
         </Button>
       )}
       
