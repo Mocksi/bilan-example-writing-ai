@@ -32,6 +32,9 @@ interface JourneyState {
  * - Navigation pattern tracking
  */
 export class JourneyTracker {
+  // Default state expiration time (1 hour)
+  private static readonly DEFAULT_STATE_EXPIRY_MS = 3600000
+
   private sessionId: string
   private startTime: number
   private stepAttempts: Map<string, number>
@@ -49,7 +52,8 @@ export class JourneyTracker {
     private journeyName: string,
     private userId: UserId,
     totalSteps: number,
-    metadata: Record<string, any> = {}
+    metadata: Record<string, any> = {},
+    private stateExpiryMs: number = JourneyTracker.DEFAULT_STATE_EXPIRY_MS
   ) {
     this.sessionId = this.generateSessionId()
     this.startTime = Date.now()
@@ -322,8 +326,8 @@ export class JourneyTracker {
     try {
       const state: JourneyState = JSON.parse(saved)
       
-      // Only restore if it's recent (within last hour)
-      if (Date.now() - state.startedAt > 3600000) {
+      // Only restore if it's recent (within configured expiry time)
+      if (Date.now() - state.startedAt > this.stateExpiryMs) {
         localStorage.removeItem(latestKey)
         return false
       }

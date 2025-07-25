@@ -140,14 +140,16 @@ export async function initializeBilan(userId: string): Promise<void> {
       }
     }
 
-    console.log('🚀 About to call bilanInit with:', initConfig)
-    console.log('🔑 API Key details:', {
-      hasApiKey: !!apiKey,
-      apiKeyLength: apiKey ? apiKey.length : 0,
-      apiKeyStatus: apiKey ? '[REDACTED-FOR-SECURITY]' : 'none',
-      configMode: initConfig.mode,
-      willPassApiKey: bilanConfig.mode === 'server'
-    })
+    if (bilanConfig.debug) {
+      console.log('🚀 About to call bilanInit with:', initConfig)
+      console.log('🔑 API Key details:', {
+        hasApiKey: !!apiKey,
+        apiKeyLength: apiKey ? apiKey.length : 0,
+        apiKeyStatus: apiKey ? '[REDACTED-FOR-SECURITY]' : 'none',
+        configMode: initConfig.mode,
+        willPassApiKey: bilanConfig.mode === 'server'
+      })
+    }
     
     // Add comprehensive network monitoring to catch ALL request types (development only)
     if (typeof window !== 'undefined' && bilanConfig.mode === 'server' && process.env.NODE_ENV === 'development') {
@@ -193,16 +195,19 @@ export async function initializeBilan(userId: string): Promise<void> {
     // Verify the SDK is actually in server mode
     const { getConfig } = await import('@mocksi/bilan-sdk')
     const actualConfig = getConfig()
-    console.log('🔍 SDK actual config after init:', actualConfig)
     
-    if (actualConfig) {
-      console.log('🔍 SDK config detailed inspection:', {
-        mode: actualConfig.mode,
-        endpoint: actualConfig.endpoint,
-        hasApiKey: 'apiKey' in actualConfig ? !!actualConfig.apiKey : false,
-        debug: actualConfig.debug,
-        userId: actualConfig.userId
-      })
+    if (bilanConfig.debug) {
+      console.log('🔍 SDK actual config after init:', actualConfig)
+      
+      if (actualConfig) {
+        console.log('🔍 SDK config detailed inspection:', {
+          mode: actualConfig.mode,
+          endpoint: actualConfig.endpoint,
+          hasApiKey: 'apiKey' in actualConfig ? !!actualConfig.apiKey : false,
+          debug: actualConfig.debug,
+          userId: actualConfig.userId
+        })
+      }
     }
 
     if (bilanConfig.debug) {
