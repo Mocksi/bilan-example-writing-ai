@@ -149,8 +149,8 @@ export async function initializeBilan(userId: string): Promise<void> {
       willPassApiKey: bilanConfig.mode === 'server'
     })
     
-    // Add comprehensive network monitoring to catch ALL request types
-    if (typeof window !== 'undefined' && bilanConfig.mode === 'server') {
+    // Add comprehensive network monitoring to catch ALL request types (development only)
+    if (typeof window !== 'undefined' && bilanConfig.mode === 'server' && process.env.NODE_ENV === 'development') {
       console.log('🕵️ Setting up comprehensive network monitoring...')
       
       // Monitor fetch requests
