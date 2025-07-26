@@ -40,55 +40,13 @@ export interface BilanConfig {
   tokenExpiresAt?: number
 }
 
-// Token response from API
-interface TokenResponse {
-  token: string
-  expiresAt: number
-  config: {
-    endpoint: string
-    mode: 'local' | 'server'
-    debug: boolean
-  }
-}
+
 
 // Global configuration
 let bilanConfig: BilanConfig | null = null
 let currentUserId: UserId | null = null
 
-/**
- * Fetch Bilan token from server
- * Following .cursorrules for client token management
- */
-async function fetchBilanToken(userId: string): Promise<TokenResponse> {
-  try {
-    const response = await fetch('/api/bilan-token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId })
-    })
 
-    if (!response.ok) {
-      throw new Error(`Token fetch failed: ${response.status}`)
-    }
-
-    return await response.json()
-  } catch (error) {
-    // Fallback to environment configuration for local development
-    console.warn('Token fetch failed, using environment fallback:', error)
-    
-    return {
-      token: `fallback-token-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      expiresAt: Date.now() + (24 * 60 * 60 * 1000),
-      config: {
-        mode: getEnvVar('NEXT_PUBLIC_BILAN_MODE', 'local') as 'local' | 'server',
-        endpoint: getEnvVar('NEXT_PUBLIC_BILAN_ENDPOINT', 'http://localhost:3002'),
-        debug: getEnvVar('NEXT_PUBLIC_DEBUG', 'false') === 'true'
-      }
-    }
-  }
-}
 
 /**
  * Initialize Bilan SDK with token authentication
@@ -96,17 +54,24 @@ async function fetchBilanToken(userId: string): Promise<TokenResponse> {
  */
 export async function initializeBilan(userId: string): Promise<void> {
   try {
-    // Get token from server for secure authentication
-    const tokenData = await fetchBilanToken(userId)
+    // Use environment configuration directly for demo
+    const mode = getEnvVar('NEXT_PUBLIC_BILAN_MODE', 'local') as 'local' | 'server'
+    const endpoint = getEnvVar('NEXT_PUBLIC_BILAN_ENDPOINT', 'http://localhost:3002')
+    const debug = getEnvVar('NEXT_PUBLIC_DEBUG', 'false') === 'true'
     
-    // Create configuration with token
+    // For server mode, use API key from environment
+    const token = mode === 'server' 
+      ? getEnvVar('BILAN_API_KEY', '')
+      : `demo-token-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+    
+    // Create configuration
     bilanConfig = {
-      mode: tokenData.config.mode,
+      mode,
       userId,
-      endpoint: tokenData.config.endpoint,
-      debug: tokenData.config.debug,
-      token: tokenData.token,
-      tokenExpiresAt: tokenData.expiresAt
+      endpoint,
+      debug,
+      token,
+      tokenExpiresAt: Date.now() + (24 * 60 * 60 * 1000)
     }
 
     currentUserId = createUserId(userId)
