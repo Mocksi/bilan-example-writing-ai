@@ -27,7 +27,7 @@ import {
   type ConversationId
 } from '@mocksi/bilan-sdk'
 
-import { getEnvVar } from './env'
+// import { getEnvVar } from './env' // BYPASSED - reading directly from process.env
 import type { AnalyticsEventProperties } from '../types/lint-types'
 
 // Bilan configuration interface
@@ -40,55 +40,13 @@ export interface BilanConfig {
   tokenExpiresAt?: number
 }
 
-// Token response from API
-interface TokenResponse {
-  token: string
-  expiresAt: number
-  config: {
-    endpoint: string
-    mode: 'local' | 'server'
-    debug: boolean
-  }
-}
+
 
 // Global configuration
 let bilanConfig: BilanConfig | null = null
 let currentUserId: UserId | null = null
 
-/**
- * Fetch Bilan token from server
- * Following .cursorrules for client token management
- */
-async function fetchBilanToken(userId: string): Promise<TokenResponse> {
-  try {
-    const response = await fetch('/api/bilan-token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId })
-    })
 
-    if (!response.ok) {
-      throw new Error(`Token fetch failed: ${response.status}`)
-    }
-
-    return await response.json()
-  } catch (error) {
-    // Fallback to environment configuration for local development
-    console.warn('Token fetch failed, using environment fallback:', error)
-    
-    return {
-      token: `fallback-token-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      expiresAt: Date.now() + (24 * 60 * 60 * 1000),
-      config: {
-        mode: getEnvVar('NEXT_PUBLIC_BILAN_MODE', 'local') as 'local' | 'server',
-        endpoint: getEnvVar('NEXT_PUBLIC_BILAN_ENDPOINT', 'http://localhost:3002'),
-        debug: getEnvVar('NEXT_PUBLIC_DEBUG', 'false') === 'true'
-      }
-    }
-  }
-}
 
 /**
  * Initialize Bilan SDK with token authentication
@@ -96,25 +54,53 @@ async function fetchBilanToken(userId: string): Promise<TokenResponse> {
  */
 export async function initializeBilan(userId: string): Promise<void> {
   try {
-    // Get token from server for secure authentication
-    const tokenData = await fetchBilanToken(userId)
+    // Use environment configuration directly for demo
+    // BYPASS getEnvVar - read directly from process.env
+    const mode = (process.env.NEXT_PUBLIC_BILAN_MODE || 'local') as 'local' | 'server'
+    const endpoint = process.env.NEXT_PUBLIC_BILAN_ENDPOINT || 'http://localhost:3002'
+    const debug = process.env.NEXT_PUBLIC_DEBUG === 'true'
     
-    // Create configuration with token
+    // For server mode, use API key from environment
+    const apiKeyFromEnv = process.env.NEXT_PUBLIC_BILAN_API_KEY || ''
+    const token = mode === 'server' 
+      ? apiKeyFromEnv
+      : `demo-token-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+    
+    // PRODUCTION SAFETY: Prevent demo tokens in production
+    if (process.env.NODE_ENV === 'production' && mode !== 'server') {
+      throw new Error(
+        'PRODUCTION ERROR: Bilan cannot use demo tokens in production. ' +
+        'Set NEXT_PUBLIC_BILAN_MODE=server and provide NEXT_PUBLIC_BILAN_API_KEY ' +
+        'for production deployments.'
+      )
+    }
+    
+    // Debug logging for initialization
+    if (debug) {
+      console.log('🔍 Bilan initialization:', {
+        mode,
+        endpoint,
+        debug,
+        hasApiKey: mode === 'server' ? !!apiKeyFromEnv : 'N/A'
+      })
+    }
+    
+    // Create configuration
     bilanConfig = {
-      mode: tokenData.config.mode,
+      mode,
       userId,
-      endpoint: tokenData.config.endpoint,
-      debug: tokenData.config.debug,
-      token: tokenData.token,
-      tokenExpiresAt: tokenData.expiresAt
+      endpoint,
+      debug,
+      token,
+      tokenExpiresAt: Date.now() + (24 * 60 * 60 * 1000)
     }
 
     currentUserId = createUserId(userId)
 
     // NEW in v0.4.2: Validate apiKey for server mode
-    const apiKey = getEnvVar('BILAN_API_KEY') || bilanConfig.token
+    const apiKey = process.env.NEXT_PUBLIC_BILAN_API_KEY || bilanConfig.token
     if (bilanConfig.mode === 'server' && !apiKey) {
-      throw new Error('BILAN_API_KEY is required for server mode in SDK v0.4.2+')
+      throw new Error('NEXT_PUBLIC_BILAN_API_KEY is required for server mode in SDK v0.4.2+')
     }
 
     // Initialize the actual Bilan SDK with required apiKey for server mode
@@ -210,14 +196,12 @@ export async function initializeBilan(userId: string): Promise<void> {
       }
     }
 
-    if (bilanConfig.debug) {
-      console.info('✅ Bilan SDK v0.4.2 initialized successfully', { 
-        mode: bilanConfig.mode, 
-        endpoint: bilanConfig.endpoint,
-        hasApiKey: bilanConfig.mode === 'server' ? !!getEnvVar('BILAN_API_KEY') : 'N/A',
-        actualSDKConfig: actualConfig
-      })
-    }
+    console.info('✅ Bilan SDK v0.4.2 initialized successfully', { 
+      mode: bilanConfig.mode, 
+      endpoint: bilanConfig.endpoint,
+      hasApiKey: bilanConfig.mode === 'server' ? !!process.env.NEXT_PUBLIC_BILAN_API_KEY : 'N/A',
+      actualSDKConfig: actualConfig
+    })
 
 
   } catch (error) {
