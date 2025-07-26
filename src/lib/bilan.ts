@@ -66,6 +66,15 @@ export async function initializeBilan(userId: string): Promise<void> {
       ? apiKeyFromEnv
       : `demo-token-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
     
+    // PRODUCTION SAFETY: Prevent demo tokens in production
+    if (process.env.NODE_ENV === 'production' && mode !== 'server') {
+      throw new Error(
+        'PRODUCTION ERROR: Bilan cannot use demo tokens in production. ' +
+        'Set NEXT_PUBLIC_BILAN_MODE=server and provide NEXT_PUBLIC_BILAN_API_KEY ' +
+        'for production deployments.'
+      )
+    }
+    
     // Debug logging for initialization
     if (debug) {
       console.log('🔍 Bilan initialization:', {
