@@ -60,9 +60,19 @@ export async function initializeBilan(userId: string): Promise<void> {
     const debug = getEnvVar('NEXT_PUBLIC_DEBUG', 'false') === 'true'
     
     // For server mode, use API key from environment
+    const apiKeyFromEnv = getEnvVar('NEXT_PUBLIC_BILAN_API_KEY', '')
     const token = mode === 'server' 
-      ? getEnvVar('BILAN_API_KEY', '')
+      ? apiKeyFromEnv
       : `demo-token-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+    
+    // Debug logging for API key
+    console.log('🔍 Environment config debug:', {
+      mode,
+      endpoint,
+      debug,
+      apiKeyFromEnv: apiKeyFromEnv ? `${apiKeyFromEnv.slice(0, 4)}***${apiKeyFromEnv.slice(-4)}` : 'EMPTY',
+      tokenSet: !!token
+    })
     
     // Create configuration
     bilanConfig = {
@@ -77,9 +87,9 @@ export async function initializeBilan(userId: string): Promise<void> {
     currentUserId = createUserId(userId)
 
     // NEW in v0.4.2: Validate apiKey for server mode
-    const apiKey = getEnvVar('BILAN_API_KEY') || bilanConfig.token
+    const apiKey = getEnvVar('NEXT_PUBLIC_BILAN_API_KEY') || bilanConfig.token
     if (bilanConfig.mode === 'server' && !apiKey) {
-      throw new Error('BILAN_API_KEY is required for server mode in SDK v0.4.2+')
+      throw new Error('NEXT_PUBLIC_BILAN_API_KEY is required for server mode in SDK v0.4.2+')
     }
 
     // Initialize the actual Bilan SDK with required apiKey for server mode
