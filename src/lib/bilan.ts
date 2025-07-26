@@ -27,7 +27,7 @@ import {
   type ConversationId
 } from '@mocksi/bilan-sdk'
 
-import { getEnvVar } from './env'
+// import { getEnvVar } from './env' // BYPASSED - reading directly from process.env
 import type { AnalyticsEventProperties } from '../types/lint-types'
 
 // Bilan configuration interface
@@ -55,24 +55,26 @@ let currentUserId: UserId | null = null
 export async function initializeBilan(userId: string): Promise<void> {
   try {
     // Use environment configuration directly for demo
-    const mode = getEnvVar('NEXT_PUBLIC_BILAN_MODE', 'local') as 'local' | 'server'
-    const endpoint = getEnvVar('NEXT_PUBLIC_BILAN_ENDPOINT', 'http://localhost:3002')
-    const debug = getEnvVar('NEXT_PUBLIC_DEBUG', 'false') === 'true'
+    // BYPASS getEnvVar - read directly from process.env
+    const mode = (process.env.NEXT_PUBLIC_BILAN_MODE || 'local') as 'local' | 'server'
+    const endpoint = process.env.NEXT_PUBLIC_BILAN_ENDPOINT || 'http://localhost:3002'
+    const debug = process.env.NEXT_PUBLIC_DEBUG === 'true'
     
     // For server mode, use API key from environment
-    const apiKeyFromEnv = getEnvVar('NEXT_PUBLIC_BILAN_API_KEY', '')
+    const apiKeyFromEnv = process.env.NEXT_PUBLIC_BILAN_API_KEY || ''
     const token = mode === 'server' 
       ? apiKeyFromEnv
       : `demo-token-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
     
-    // Debug logging for API key
-    console.log('🔍 Environment config debug:', {
-      mode,
-      endpoint,
-      debug,
-      apiKeyFromEnv: apiKeyFromEnv ? `${apiKeyFromEnv.slice(0, 4)}***${apiKeyFromEnv.slice(-4)}` : 'EMPTY',
-      tokenSet: !!token
-    })
+    // Debug logging for initialization
+    if (debug) {
+      console.log('🔍 Bilan initialization:', {
+        mode,
+        endpoint,
+        debug,
+        hasApiKey: mode === 'server' ? !!apiKeyFromEnv : 'N/A'
+      })
+    }
     
     // Create configuration
     bilanConfig = {
@@ -87,7 +89,7 @@ export async function initializeBilan(userId: string): Promise<void> {
     currentUserId = createUserId(userId)
 
     // NEW in v0.4.2: Validate apiKey for server mode
-    const apiKey = getEnvVar('NEXT_PUBLIC_BILAN_API_KEY') || bilanConfig.token
+    const apiKey = process.env.NEXT_PUBLIC_BILAN_API_KEY || bilanConfig.token
     if (bilanConfig.mode === 'server' && !apiKey) {
       throw new Error('NEXT_PUBLIC_BILAN_API_KEY is required for server mode in SDK v0.4.2+')
     }
@@ -185,14 +187,12 @@ export async function initializeBilan(userId: string): Promise<void> {
       }
     }
 
-    if (bilanConfig.debug) {
-      console.info('✅ Bilan SDK v0.4.2 initialized successfully', { 
-        mode: bilanConfig.mode, 
-        endpoint: bilanConfig.endpoint,
-        hasApiKey: bilanConfig.mode === 'server' ? !!getEnvVar('BILAN_API_KEY') : 'N/A',
-        actualSDKConfig: actualConfig
-      })
-    }
+    console.info('✅ Bilan SDK v0.4.2 initialized successfully', { 
+      mode: bilanConfig.mode, 
+      endpoint: bilanConfig.endpoint,
+      hasApiKey: bilanConfig.mode === 'server' ? !!process.env.NEXT_PUBLIC_BILAN_API_KEY : 'N/A',
+      actualSDKConfig: actualConfig
+    })
 
 
   } catch (error) {

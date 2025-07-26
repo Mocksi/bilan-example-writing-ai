@@ -16,16 +16,8 @@ import type { TurnId, UserId } from '../../types'
 const mockFetch = vi.fn()
 global.fetch = mockFetch
 
-// Mock environment
+// Mock environment - no longer using getEnvVar
 vi.mock('../env', () => ({
-  getEnvVar: vi.fn((key: string, defaultValue?: string) => {
-    const mockValues: Record<string, string> = {
-      'NEXT_PUBLIC_BILAN_ENDPOINT': 'http://localhost:3002',
-      'NEXT_PUBLIC_BILAN_MODE': 'local',
-      'NEXT_PUBLIC_DEBUG': 'true'
-    }
-    return mockValues[key] || defaultValue || ''
-  }),
   env: {
     AI_MODEL: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
     BILAN_ENDPOINT: 'http://localhost:3002',
