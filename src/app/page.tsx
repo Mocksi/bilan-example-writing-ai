@@ -1,9 +1,12 @@
 'use client'
 
-import { Container, Title, Text, SimpleGrid, Stack } from '@mantine/core'
-import { ContentTypeCard } from '../components/ContentTypeCard'
-import type { ContentType } from '../types'
-import { useNavigation } from '../hooks'
+import { Container, Title, Text, SimpleGrid, Stack, Card, Button, Group, Modal } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
+import { useState } from 'react'
+import { QuickActionModal } from '../components/QuickActionModal'
+import { WebLLMChat } from '../components/WebLLMChat'
+import { useNavigation, useQuickActions } from '../hooks'
+import { IconLanguage } from '@tabler/icons-react'
 
 /**
  * Core business logic configuration for AI content generation types
@@ -32,95 +35,180 @@ import { useNavigation } from '../hooks'
  * }
  * ```
  */
-const contentTypes = [
+// Demo cards showing three core Bilan integration patterns
+const demoCards = [
   {
-    /** @property {ContentType} contentType - Typed enum value used throughout the application for content processing */
-    contentType: 'blog' as ContentType,
-    /** @property {string} title - User-facing display name shown in selection cards and navigation */
-    title: 'Blog Posts',
-    /** @property {string} description - Explanatory text helping users understand this content type's purpose */
-    description: 'Create engaging blog posts and articles with AI assistance. Perfect for thought leadership, tutorials, and storytelling.',
-    /** @property {string} icon - Emoji icon providing visual identification in the UI */
-    icon: '📝',
-    /** @property {string[]} examples - Concrete use cases that inspire users and demonstrate content type capabilities */
+    id: 'quick-action',
+    title: 'Quick Translation',
+    description: 'Single AI turn with optional voting. Demonstrates the simplest Bilan integration pattern - one interaction, one vote.',
+    icon: '🌐',
     examples: [
-      'AI development best practices for startups',
-      'The future of remote work trends',
-      'How to build better coding habits'
-    ]
+      'Translate any text',
+      'Single turn tracking',
+      'Optional feedback vote'
+    ],
+    pattern: 'Single Turn + Vote'
   },
   {
-    /** @property {ContentType} contentType - Professional email content type for business communication */
-    contentType: 'email' as ContentType,
-    /** @property {string} title - Display name emphasizing professional email writing capabilities */
-    title: 'Email Writing',
-    /** @property {string} description - Focuses on results-oriented business communication use cases */
-    description: 'Craft professional emails that get results. From follow-ups to announcements, create clear and effective communication.',
-    /** @property {string} icon - Email emoji representing digital correspondence */
+    id: 'conversation',  
+    title: 'AI Chat',
+    description: 'Multi-turn conversation with AI. Each message is tracked, demonstrating conversation management with start/end tracking.',
+    icon: '💬',
+    examples: [
+      'Multiple turns',
+      'Conversation tracking',
+      'Vote on any response'
+    ],
+    pattern: 'Conversation (Multiple Turns)'
+  },
+  {
+    id: 'workflow',
+    title: 'Email Workflow',
+    description: 'Guided email creation workflow. Demonstrates journey tracking with steps, multiple turns, and comprehensive analytics.',
     icon: '📧',
-    /** @property {string[]} examples - Business-focused email scenarios for various professional contexts */
     examples: [
-      'Follow-up after networking event',
-      'Project update to stakeholders',
-      'Customer onboarding sequence'
-    ]
-  },
-  {
-    /** @property {ContentType} contentType - Social media content type optimized for engagement and virality */
-    contentType: 'social' as ContentType,
-    /** @property {string} title - Display name highlighting social media content creation */
-    title: 'Social Media',
-    /** @property {string} description - Emphasizes engagement-driven content for social platforms */
-    description: 'Generate engaging social media content that drives interaction. Create posts that capture attention and spark conversation.',
-    /** @property {string} icon - Mobile phone emoji representing social media platforms */
-    icon: '📱',
-    /** @property {string[]} examples - Social media post types across different content categories */
-    examples: [
-      'Product launch announcement',
-      'Behind-the-scenes company culture',
-      'Industry insights and tips'
-    ]
+      'Journey with steps',
+      'Multiple AI turns',
+      'Vote at each stage'
+    ],
+    pattern: 'Journey + Steps + Turns'
   }
 ]
 
 export default function HomePage() {
   const { navigateToCreator } = useNavigation()
+  const [showChat, setShowChat] = useState(false)
+  const quickActions = useQuickActions()
 
-  const handleContentTypeSelect = (contentType: ContentType) => {
-    navigateToCreator(contentType)
+  // Handle voting on quick action results
+  const handleQuickActionVote = async (turnId: string, rating: 1 | -1) => {
+    try {
+      // Import vote function from bilan
+      const { vote } = await import('../lib/bilan')
+      
+      // Submit vote to Bilan
+      await vote(turnId, rating, undefined, {
+        feedbackType: rating === 1 ? 'accept' : 'reject',
+        action_context: 'quick_action_demo'
+      })
+
+      // Show success notification
+      notifications.show({
+        title: 'Feedback Submitted',
+        message: `Your ${rating === 1 ? 'positive' : 'negative'} feedback has been recorded successfully`,
+        color: 'green'
+      })
+
+      console.log('Vote submitted successfully:', turnId, rating)
+    } catch (error) {
+      console.error('Failed to submit vote:', error)
+      
+      // Show error notification to user
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit your feedback'
+      notifications.show({
+        title: 'Feedback Failed',
+        message: `Unable to submit your feedback: ${errorMessage}. Please try again.`,
+        color: 'red'
+      })
+    }
+  }
+
+  const handleDemoSelect = (demoId: string) => {
+    switch (demoId) {
+      case 'quick-action':
+        // Open translation quick action
+        quickActions.openAction({
+          id: 'translate',
+          label: 'Translate',
+          description: 'Translate text to any language',
+          icon: <IconLanguage size={16} />,
+          placeholder: 'Enter text to translate and specify target language...',
+          maxLength: 3000
+        })
+        break
+      case 'conversation':
+        setShowChat(true)
+        break
+      case 'workflow':
+        navigateToCreator('email')
+        break
+    }
   }
 
   return (
     <Container size="xl" py="xl">
       <Stack align="center" gap="xl" mb="xl">
         <Title order={1} ta="center" fw={700}>
-          AI-Powered Content Creation
+          Bilan SDK Demo - Three Core Patterns
         </Title>
         
         <Text size="lg" ta="center" c="dimmed" maw={600}>
-          Choose the type of content you want to create. Our AI assistant will help you 
-          craft compelling content tailored to your needs.
-        </Text>
-        
-        <Text size="sm" ta="center" c="dimmed">
-          This demo showcases <strong>Bilan SDK integration</strong> with AI content creation workflows.
-          All user interactions are tracked for analytics insights.
+          Explore three fundamental ways to integrate Bilan analytics into your AI application.
+          Each demo showcases a different tracking pattern.
         </Text>
       </Stack>
 
       <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
-        {contentTypes.map((type) => (
-          <ContentTypeCard
-            key={type.contentType}
-            contentType={type.contentType}
-            title={type.title}
-            description={type.description}
-            icon={type.icon}
-            examples={type.examples}
-            onSelect={handleContentTypeSelect}
-          />
+        {demoCards.map((demo) => (
+          <Card key={demo.id} shadow="sm" padding="lg" radius="md" withBorder>
+            <Stack>
+              <Group justify="space-between" align="flex-start">
+                <Text size="2rem">{demo.icon}</Text>
+                <Text size="xs" c="dimmed" fw={500}>{demo.pattern}</Text>
+              </Group>
+              
+              <Text size="lg" fw={600}>{demo.title}</Text>
+              <Text size="sm" c="dimmed">{demo.description}</Text>
+              
+              <Stack gap="xs">
+                {demo.examples.map((example, idx) => (
+                  <Group key={idx} gap="xs">
+                    <Text size="xs" c="blue">•</Text>
+                    <Text size="xs" c="dimmed">{example}</Text>
+                  </Group>
+                ))}
+              </Stack>
+              
+              <Button 
+                fullWidth 
+                mt="md"
+                onClick={() => handleDemoSelect(demo.id)}
+              >
+                Try {demo.title}
+              </Button>
+            </Stack>
+          </Card>
         ))}
       </SimpleGrid>
+
+      {/* Quick Action Modal - Managed by useQuickActions hook */}
+      <QuickActionModal
+        opened={quickActions.isModalOpen}
+        onClose={quickActions.closeAction}
+        action={quickActions.selectedAction}
+        onSubmit={quickActions.processAction}
+        onVote={handleQuickActionVote}
+      />
+
+      {/* Chat Interface - Conversation Demo */}
+      {showChat && (
+        <Container size="lg" mt="md">
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Stack>
+              <Group justify="space-between">
+                <Title order={3}>AI Conversation Demo</Title>
+                <Button variant="subtle" onClick={() => setShowChat(false)}>
+                  Close
+                </Button>
+              </Group>
+              <Text size="sm" c="dimmed">
+                Each message creates a tracked turn. Conversation ID links all turns together.
+              </Text>
+              <WebLLMChat onClose={() => setShowChat(false)} />
+            </Stack>
+          </Card>
+        </Container>
+      )}
     </Container>
   )
 }

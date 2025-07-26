@@ -1,8 +1,9 @@
 'use client'
 
-import { Badge, Group, Text, Tooltip, Alert } from '@mantine/core'
+import { Badge, Group, Text, Tooltip, Alert, Button, Loader } from '@mantine/core'
+import { notifications } from '@mantine/notifications'
 import { useEffect, useState } from 'react'
-import { getAIStatus } from '../lib/ai-client'
+import { getAIStatus, aiClient } from '../lib/ai-client'
 
 /**
  * Real-time AI client status indicator component
@@ -37,6 +38,9 @@ export function AIStatusIndicator() {
     model: 'unknown',
     error: undefined as string | undefined
   })
+  
+  // Separate loading state for manual initialization to prevent multiple clicks
+  const [isInitializing, setIsInitializing] = useState(false)
 
   useEffect(() => {
     /**
@@ -111,6 +115,55 @@ export function AIStatusIndicator() {
     return 'AI not initialized'
   }
 
+  const handleInitializeAI = async () => {
+    if (isInitializing) return // Prevent multiple simultaneous initializations
+    
+    setIsInitializing(true)
+    
+    try {
+      console.log('Manual AI initialization triggered')
+      
+      // Show initialization started notification
+      notifications.show({
+        id: 'ai-init',
+        title: 'Initializing AI',
+        message: 'Loading AI model, please wait...',
+        color: 'blue',
+        loading: true,
+        autoClose: false
+      })
+      
+      await aiClient.initialize()
+      
+      // Show success notification
+      notifications.update({
+        id: 'ai-init',
+        title: 'AI Ready',
+        message: 'AI model has been successfully initialized and is ready to use',
+        color: 'green',
+        loading: false,
+        autoClose: 3000
+      })
+      
+      console.log('AI initialization completed')
+    } catch (error) {
+      console.error('AI initialization failed:', error)
+      
+      // Show error notification
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      notifications.update({
+        id: 'ai-init',
+        title: 'AI Initialization Failed',
+        message: `Failed to initialize AI model: ${errorMessage}. Please try again.`,
+        color: 'red',
+        loading: false,
+        autoClose: 5000
+      })
+    } finally {
+      setIsInitializing(false)
+    }
+  }
+
   return (
     <Group gap="xs">
       <Tooltip label={getStatusDescription()}>
@@ -122,6 +175,19 @@ export function AIStatusIndicator() {
           AI: {getStatusText()}
         </Badge>
       </Tooltip>
+      
+      {/* Debug button for manual initialization */}
+      {!status.isInitialized && !status.isLoading && (
+        <Button
+          size="xs"
+          variant="outline"
+          onClick={handleInitializeAI}
+          disabled={isInitializing}
+          leftSection={isInitializing ? <Loader size="xs" /> : undefined}
+        >
+          {isInitializing ? 'Initializing...' : 'Initialize AI'}
+        </Button>
+      )}
       
       {status.error && (
         <Alert color="red" variant="light">

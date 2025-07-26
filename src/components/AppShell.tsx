@@ -8,26 +8,20 @@ import {
   Button, 
   Stack,
   Tabs,
-  Menu,
-  ActionIcon,
   Box
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { 
-  IconChevronDown,
   IconSparkles,
   IconPencil,
-  IconLanguage,
-  IconBulb,
-  IconFileText,
   IconMail,
   IconBrandTwitter
 } from '@tabler/icons-react'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useState, useEffect } from 'react'
 import { AIStatusIndicator } from './AIStatusIndicator'
 import { QuickActionModal, type QuickAction } from './QuickActionModal'
 import { useQuickActions } from '../hooks/useQuickActions'
-import { vote, track } from '../lib/bilan'
+import { vote, track, initializeBilan, createUserId } from '../lib/bilan'
 import { trackQuickActionFeedback } from '../lib/quick-action-analytics'
 
 interface AppShellProps {
@@ -42,47 +36,7 @@ interface AppShellProps {
  * interaction with immediate results.
  */
 
-/**
- * Available quick actions for standalone AI turns
- * 
- * These actions demonstrate standalone turns in the Bilan tracking model -
- * single AI interactions that don't require conversation context or journey state.
- * Each action can be triggered independently and tracked as individual turns.
- */
-const quickActionsData: QuickAction[] = [
-  {
-    id: 'summarize',
-    label: 'Summarize Text',
-    description: 'Create concise summaries of long content',
-    icon: <IconFileText size={16} />,
-    placeholder: 'Paste the text you want to summarize here...',
-    maxLength: 4000
-  },
-  {
-    id: 'grammar',
-    label: 'Fix Grammar',
-    description: 'Correct grammar and improve clarity',
-    icon: <IconPencil size={16} />,
-    placeholder: 'Enter text that needs grammar correction...',
-    maxLength: 2000
-  },
-  {
-    id: 'translate',
-    label: 'Translate',
-    description: 'Translate text to different languages',
-    icon: <IconLanguage size={16} />,
-    placeholder: 'Enter text to translate (specify target language in your text)...',
-    maxLength: 1500
-  },
-  {
-    id: 'brainstorm',
-    label: 'Generate Ideas',
-    description: 'Brainstorm creative ideas and concepts',
-    icon: <IconBulb size={16} />,
-    placeholder: 'Describe what you need ideas for...',
-    maxLength: 1000
-  }
-]
+
 
 /**
  * Main application shell component implementing dual-mode interface
@@ -130,6 +84,21 @@ export function AppShell({ children }: AppShellProps) {
   const [activeTab, setActiveTab] = useState<string>('workflows')
   const quickActions = useQuickActions()
 
+  // Initialize Bilan SDK for the entire app
+  useEffect(() => {
+    const initializeBilanForApp = async () => {
+      try {
+        const userId = createUserId(`user_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`)
+        await initializeBilan(userId)
+        console.log('Bilan initialized in AppShell for user:', userId)
+      } catch (error) {
+        console.warn('Bilan initialization failed in AppShell:', error)
+      }
+    }
+
+    initializeBilanForApp()
+  }, [])
+
   /**
    * Handle analytics dashboard navigation
    * 
@@ -141,27 +110,7 @@ export function AppShell({ children }: AppShellProps) {
     console.log('Opening Bilan analytics dashboard')
   }
 
-  /**
-   * Handle quick action selection
-   * 
-   * Triggers a standalone AI turn for the selected quick action.
-   * These are tracked as individual turns without conversation or journey context.
-   * 
-   * @param {string} actionId - Unique identifier of the selected quick action
-   */
-  const handleQuickAction = (actionId: string) => {
-    const action = quickActionsData.find(a => a.id === actionId)
-    if (action) {
-      quickActions.openAction(action)
-      
-      // Track quick action selection event
-      track('quick_action_opened', {
-        action_id: actionId,
-        action_label: action.label,
-        timestamp: Date.now()
-      })
-    }
-  }
+
 
   /**
    * Handle quick action vote
@@ -219,42 +168,7 @@ export function AppShell({ children }: AppShellProps) {
     }
   }
 
-  /**
-   * Quick actions dropdown menu component
-   * 
-   * Provides access to standalone AI actions that can be performed independently
-   * of workflows or conversations. Each action represents a single turn in the
-   * Bilan tracking model.
-   */
-  const QuickActionsDropdown = () => (
-    <Menu shadow="md" width={250}>
-      <Menu.Target>
-        <Button
-          variant="light"
-          rightSection={<IconChevronDown size={16} />}
-          size="sm"
-        >
-          Quick Actions
-        </Button>
-      </Menu.Target>
 
-      <Menu.Dropdown>
-        <Menu.Label>AI Tools</Menu.Label>
-        {quickActionsData.map((action) => (
-          <Menu.Item
-            key={action.id}
-            leftSection={action.icon}
-            onClick={() => handleQuickAction(action.id)}
-          >
-            <div>
-              <Text size="sm" fw={500}>{action.label}</Text>
-              <Text size="xs" c="dimmed">{action.description}</Text>
-            </div>
-          </Menu.Item>
-        ))}
-      </Menu.Dropdown>
-    </Menu>
-  )
 
   return (
     <MantineAppShell
@@ -285,16 +199,13 @@ export function AppShell({ children }: AppShellProps) {
             <AIStatusIndicator />
           </Group>
           
-          <Group gap="sm">
-            <QuickActionsDropdown />
-            <Button
-              variant="light"
-              size="sm"
-              onClick={handleAnalyticsClick}
-            >
-              View Analytics
-            </Button>
-          </Group>
+          <Button
+            variant="light"
+            size="sm"
+            onClick={handleAnalyticsClick}
+          >
+            View Analytics
+          </Button>
         </Group>
 
         {/* Navigation Tabs for Dual-Mode Interface */}

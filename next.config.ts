@@ -1,7 +1,34 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  webpack: (config, { isServer }) => {
+  // Disable CSS source maps to prevent 404 errors in development
+  productionBrowserSourceMaps: false,
+  
+  webpack: (config, { isServer, dev }) => {
+    // Configure source maps for clean development experience
+    if (dev) {
+      // Keep JS source maps but disable CSS source maps
+      config.devtool = 'eval-cheap-module-source-map';
+      
+      // Disable CSS source map generation to prevent 404s
+      const disableCSSSourceMaps = (rules: any[]): void => {
+        rules.forEach(rule => {
+          if (rule.oneOf) {
+            disableCSSSourceMaps(rule.oneOf);
+          } else if (rule.use) {
+            const uses = Array.isArray(rule.use) ? rule.use : [rule.use];
+            uses.forEach((use: any) => {
+              if (use.loader?.includes?.('css-loader')) {
+                use.options = { ...use.options, sourceMap: false };
+              }
+            });
+          }
+        });
+      };
+      
+      disableCSSSourceMaps(config.module.rules);
+    }
+    
     // Ensure WebLLM is only loaded on client-side to avoid SSR issues
     if (!isServer) {
       config.resolve.fallback = {
@@ -20,11 +47,7 @@ const nextConfig: NextConfig = {
     
     return config;
   },
-  
-  // Optimize for WebLLM WASM blob loading
-  experimental: {
-    esmExternals: 'loose',
-  },
+
 };
 
 export default nextConfig;

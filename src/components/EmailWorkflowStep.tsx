@@ -136,6 +136,22 @@ export function EmailWorkflowStep({
   }
 
   /**
+   * Check if the current step can be completed
+   */
+  const canComplete = () => {
+    switch (stepId) {
+      case 'purpose-definition':
+        return formData.goal && formData.audience && formData.tone
+      case 'subject-generation':
+      case 'body-writing':
+      case 'cta-creation':
+        return !!generatedContent
+      default:
+        return false
+    }
+  }
+
+  /**
    * Copy generated content to clipboard
    */
   const handleCopy = async () => {
@@ -198,6 +214,13 @@ export function EmailWorkflowStep({
               onChange={(e) => updateFormData('context', e.target.value)}
               minRows={3}
             />
+            
+            {/* Completion Status Indicator */}
+            {formData.goal && formData.audience && formData.tone && (
+              <Alert color="green" variant="light">
+                <Text size="sm">✅ All required fields completed. You can now proceed to the next step.</Text>
+              </Alert>
+            )}
           </Stack>
         )
 
@@ -364,11 +387,10 @@ export function EmailWorkflowStep({
       )}
 
       {/* Step Completion */}
-      {(generatedContent || isCompleted) && (
+      {canComplete() && (
         <Group justify="flex-end">
           <Button
             onClick={handleComplete}
-            disabled={!generatedContent && !isCompleted}
             size="lg"
           >
             {stepId === 'cta-creation' ? 'Complete Email Campaign' : 'Continue to Next Step'}

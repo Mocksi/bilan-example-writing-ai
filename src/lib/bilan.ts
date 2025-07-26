@@ -111,24 +111,115 @@ export async function initializeBilan(userId: string): Promise<void> {
 
     currentUserId = createUserId(userId)
 
-    // Initialize the actual Bilan SDK with token
+    // NEW in v0.4.2: Validate apiKey for server mode
+    const apiKey = getEnvVar('BILAN_API_KEY') || bilanConfig.token
+    if (bilanConfig.mode === 'server' && !apiKey) {
+      throw new Error('BILAN_API_KEY is required for server mode in SDK v0.4.2+')
+    }
+
+    // Initialize the actual Bilan SDK with required apiKey for server mode
     const initConfig: InitConfig = {
       mode: bilanConfig.mode,
       userId: currentUserId,
       endpoint: bilanConfig.endpoint,
       debug: bilanConfig.debug,
-      // Include token in init config if SDK supports it
-      ...(bilanConfig.token && { token: bilanConfig.token })
+      // NEW in v0.4.2: apiKey is required for server mode
+      ...(bilanConfig.mode === 'server' && { apiKey }),
+      // CRITICAL: privacyConfig is required for event system to initialize
+      privacyConfig: {
+        defaultCaptureLevel: 'sanitized' as const,
+        captureLevels: {
+          prompts: 'sanitized' as const,
+          responses: 'sanitized' as const,
+          errors: 'sanitized' as const,
+          metadata: 'full' as const
+        },
+        customPiiPatterns: [],
+        detectBuiltinPii: true,
+        hashSensitiveContent: false
+      }
     }
-
-    await bilanInit(initConfig)
 
     if (bilanConfig.debug) {
-      console.info('Bilan SDK initialized successfully', { 
-        mode: bilanConfig.mode, 
-        endpoint: bilanConfig.endpoint 
+      console.log('🚀 About to call bilanInit with:', initConfig)
+      console.log('🔑 API Key details:', {
+        hasApiKey: !!apiKey,
+        apiKeyLength: apiKey ? apiKey.length : 0,
+        apiKeyStatus: apiKey ? '[REDACTED-FOR-SECURITY]' : 'none',
+        configMode: initConfig.mode,
+        willPassApiKey: bilanConfig.mode === 'server'
       })
     }
+    
+    // Add comprehensive network monitoring to catch ALL request types (development only)
+    if (typeof window !== 'undefined' && bilanConfig.mode === 'server' && process.env.NODE_ENV === 'development') {
+      console.log('🕵️ Setting up comprehensive network monitoring...')
+      
+      // Monitor fetch requests
+      const originalFetch = window.fetch
+      window.fetch = async (...args) => {
+        const [resource, config] = args
+        const url = typeof resource === 'string' ? resource : 
+                    resource instanceof URL ? resource.toString() : 
+                    resource instanceof Request ? resource.url : 'unknown'
+        
+        if (url.includes('localhost:3002') || url.includes('/api/events')) {
+          // Log Bilan API requests for debugging
+          let eventCount = 0
+          try {
+            if (config?.body && typeof config.body === 'string') {
+              const parsedBody = JSON.parse(config.body)
+              eventCount = parsedBody?.events?.length || 0
+            }
+          } catch (e) {}
+          
+          console.log(`🌐 → Bilan API: ${config?.method || 'GET'} ${eventCount} events`)
+        }
+        
+        const response = await originalFetch(...args)
+        
+        if (url.includes('localhost:3002') || url.includes('/api/events')) {
+          console.log(`🌐 ← Bilan API: ${response.status} ${response.ok ? '✅' : '❌'}`)
+        }
+        
+        return response
+      }
+
+
+
+      console.log('🕵️ Network monitoring setup complete')
+    }
+    
+    await bilanInit(initConfig)
+
+    // Verify the SDK is actually in server mode
+    const { getConfig } = await import('@mocksi/bilan-sdk')
+    const actualConfig = getConfig()
+    
+    if (bilanConfig.debug) {
+      console.log('🔍 SDK actual config after init:', actualConfig)
+      
+      if (actualConfig) {
+        console.log('🔍 SDK config detailed inspection:', {
+          mode: actualConfig.mode,
+          endpoint: actualConfig.endpoint,
+          hasApiKey: 'apiKey' in actualConfig ? !!actualConfig.apiKey : false,
+          debug: actualConfig.debug,
+          userId: actualConfig.userId
+        })
+      }
+    }
+
+    if (bilanConfig.debug) {
+      console.info('✅ Bilan SDK v0.4.2 initialized successfully', { 
+        mode: bilanConfig.mode, 
+        endpoint: bilanConfig.endpoint,
+        hasApiKey: bilanConfig.mode === 'server' ? !!getEnvVar('BILAN_API_KEY') : 'N/A',
+        actualSDKConfig: actualConfig
+      })
+    }
+
+
   } catch (error) {
     // Fire-and-forget: log error but don't throw
     console.warn('Bilan initialization failed:', error)
@@ -185,8 +276,17 @@ export async function trackTurn<T>(
     }
 
     const startTime = Date.now()
+    
+    console.log('📊 TrackTurn:', {
+      actionType: metadata?.action_type || 'unknown',
+      promptLength: prompt.length,
+      model: metadata?.model || 'unknown'
+    })
+    
     const response = await bilanTrackTurn(prompt, aiFunction, turnContext)
     const responseTime = Date.now() - startTime
+    
+    console.log('📊 Turn completed:', response.turnId, `${responseTime}ms`)
 
     // Update conversation turn count if this turn is part of a conversation
     if (metadata?.conversationId) {
@@ -195,10 +295,10 @@ export async function trackTurn<T>(
 
     // Log successful tracking in debug mode
     if (bilanConfig?.debug) {
-      console.info('Turn tracked successfully', {
+      console.info('✅ Turn tracked successfully', {
         turnId: response.turnId,
-        responseTime,
-        context: turnContext
+        responseTime: `${responseTime}ms`,
+        actionType: turnContext.action_type || 'ai_interaction'
       })
     }
 
@@ -249,6 +349,8 @@ export async function vote(
         voteTimestamp: Date.now()
       })}]` : undefined
 
+    console.log('🗳️ Vote:', turnId, rating === 1 ? '👍' : '👎')
+    
     await bilanVote(turnId, rating, enhancedComment)
 
     // Log successful vote tracking in debug mode

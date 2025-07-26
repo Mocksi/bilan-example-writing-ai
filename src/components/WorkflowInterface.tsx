@@ -13,11 +13,12 @@ import {
   Alert,
   Loader
 } from '@mantine/core'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { IconCheck, IconAlertCircle } from '@tabler/icons-react'
 import type { ContentType } from '../types'
-import { startJourney, trackJourneyStep, endJourney } from '../lib/bilan'
+import { initializeBilan, createUserId } from '../lib/bilan'
+import { JourneyTracker } from '../lib/journey-tracker'
 import { EmailWorkflowStep } from './EmailWorkflowStep'
 import { SocialWorkflowStep } from './SocialWorkflowStep'
 
@@ -127,9 +128,9 @@ export function WorkflowInterface({
   const [activeStep, setActiveStep] = useState(0)
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set())
   const [stepData, setStepData] = useState<Record<string, any>>({})
-  const [journeyId, setJourneyId] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>('')
+  const journeyTracker = useRef<JourneyTracker | null>(null)
 
   const workflow = WORKFLOW_DEFINITIONS[contentType] || []
   const currentStep = workflow[activeStep]
@@ -141,17 +142,32 @@ export function WorkflowInterface({
     const initializeJourney = async () => {
       try {
         setIsLoading(true)
+        
+        // Initialize Bilan with user ID
+        const userId = createUserId(`user_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`)
+        await initializeBilan(userId)
+        
         const journeyType = contentType === 'email' ? 'email-campaign' : 
                            contentType === 'social' ? 'social-media' : 
                            'blog-creation'
         
-        const newJourneyId = await startJourney(journeyType, {
-          contentType,
-          topic: `${contentType} content creation`,
-          userBrief: `Creating ${contentType} content through guided workflow`
-        })
+        // Create journey tracker
+        journeyTracker.current = new JourneyTracker(
+          journeyType,
+          userId,
+          workflow.length,
+          {
+            contentType,
+            topic: `${contentType} content creation`,
+            userBrief: `Creating ${contentType} content through guided workflow`
+          }
+        )
 
-        setJourneyId(newJourneyId)
+        // Start the journey
+        await journeyTracker.current.start({
+          source: 'workflow_interface',
+          contentType
+        })
       } catch (err) {
         setError('Failed to initialize workflow. Please try again.')
         console.error('Journey initialization failed:', err)
@@ -161,19 +177,20 @@ export function WorkflowInterface({
     }
 
     initializeJourney()
-  }, [contentType])
+  }, [contentType, workflow.length])
 
   /**
    * Track step changes after journey is initialized
    */
   useEffect(() => {
     const trackStepStart = async () => {
-      if (journeyId && currentStep) {
+      if (journeyTracker.current && currentStep && activeStep > 0) {
         try {
-          await trackJourneyStep(journeyId, currentStep.id, {
-            completionStatus: 'started',
-            stepData: { stepIndex: activeStep }
-          })
+          await journeyTracker.current.trackStep(
+            currentStep.id, 
+            activeStep + 1,
+            { stepIndex: activeStep }
+          )
         } catch (err) {
           console.error('Failed to track step start:', err)
         }
@@ -181,7 +198,7 @@ export function WorkflowInterface({
     }
 
     trackStepStart()
-  }, [journeyId, activeStep, currentStep])
+  }, [activeStep, currentStep])
 
   /**
    * Handle step completion
@@ -199,13 +216,36 @@ export function WorkflowInterface({
       newCompletedSteps.add(activeStep)
       setCompletedSteps(newCompletedSteps)
       
-      // Track step completion with Bilan
-      if (journeyId) {
-        await trackJourneyStep(journeyId, stepId, {
+      // Track step completion with enhanced metadata
+      if (journeyTracker.current) {
+        // Include rich step data
+        const stepMetadata = {
+          ...data,
           completionStatus: 'completed',
-          stepData: data,
-          stepIndex: activeStep
-        })
+          stepIndex: activeStep,
+          timeToComplete: Date.now()
+        }
+
+        // For email workflow, add specific metadata
+        if (contentType === 'email') {
+          if (stepId === 'subject-generation' && data.subjects) {
+            stepMetadata.subjects_generated = data.subjects.length
+            stepMetadata.selected_subject = data.selectedSubject
+          } else if (stepId === 'body-writing' && data.body) {
+            stepMetadata.body_length = data.body.length
+            stepMetadata.structure_used = data.structure
+          }
+        }
+
+        await journeyTracker.current.trackStep(stepId, activeStep + 1, stepMetadata)
+
+        // Link turn if one was created
+        if (data.turnId) {
+          await journeyTracker.current.linkTurn(data.turnId, {
+            step_name: stepId,
+            generated_content_length: data.generatedContent?.length || 0
+          })
+        }
       }
       
       // Move to next step or complete workflow
@@ -214,11 +254,12 @@ export function WorkflowInterface({
         setActiveStep(nextStepIndex)
         
         // Track next step start
-        if (journeyId) {
-          await trackJourneyStep(journeyId, workflow[nextStepIndex].id, {
-            completionStatus: 'started',
-            stepData: { stepIndex: nextStepIndex }
-          })
+        if (journeyTracker.current) {
+          await journeyTracker.current.trackStep(
+            workflow[nextStepIndex].id, 
+            nextStepIndex + 1,
+            { stepStatus: 'started' }
+          )
         }
       } else {
         // Workflow complete
@@ -237,12 +278,14 @@ export function WorkflowInterface({
    */
   const handleWorkflowComplete = async (finalStepData: Record<string, any>) => {
     try {
-      // End journey tracking
-      if (journeyId) {
-        await endJourney(journeyId, 'completed', {
+      // End journey tracking with comprehensive metadata
+      if (journeyTracker.current) {
+        await journeyTracker.current.complete('completed', {
           finalOutput: JSON.stringify(finalStepData),
           satisfactionScore: 1, // Could be enhanced with user feedback
-          completionTime: Date.now()
+          completionTime: Date.now(),
+          totalStepsData: Object.keys(finalStepData).length,
+          contentType
         })
       }
 
@@ -271,13 +314,9 @@ export function WorkflowInterface({
    */
   const handleCancel = async () => {
     try {
-      // End journey as abandoned
-      if (journeyId) {
-        await endJourney(journeyId, 'abandoned', {
-          abandonedAt: Date.now(),
-          completedSteps: completedSteps.size,
-          totalSteps: workflow.length
-        })
+      // Track journey abandonment with detailed context
+      if (journeyTracker.current) {
+        await journeyTracker.current.abandon('user_cancelled')
       }
 
       if (onCancel) {
@@ -288,7 +327,11 @@ export function WorkflowInterface({
     } catch (err) {
       console.error('Journey abandonment tracking failed:', err)
       // Still allow cancellation even if tracking fails
-      router.push('/')
+      if (onCancel) {
+        onCancel()
+      } else {
+        router.push('/')
+      }
     }
   }
 
