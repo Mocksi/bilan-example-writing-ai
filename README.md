@@ -56,9 +56,28 @@ This demo uses WebLLM for completely local AI inference:
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
 | `NEXT_PUBLIC_AI_MODEL` | WebLLM model ID | `Llama-3.2-1B-Instruct-q4f32_1-MLC` | No |
-| `NEXT_PUBLIC_BILAN_ENDPOINT` | Bilan server URL | - | **Conditional*** |
-| `NEXT_PUBLIC_BILAN_MODE` | Bilan mode | `local` | No |
+| `NEXT_PUBLIC_BILAN_ENDPOINT` | Bilan server URL | `http://localhost:3002` | **Yes for server mode** |
+| `NEXT_PUBLIC_BILAN_MODE` | Bilan mode (`local` or `server`) | `local` | **Yes for production** |
+| `NEXT_PUBLIC_BILAN_API_KEY` | Bilan API key | - | **Yes for server mode** |
 | `NEXT_PUBLIC_DEBUG` | Enable debug logging | `false` | No |
+
+### 🚨 Production Deployment Requirements
+
+**CRITICAL**: For production deployments, you MUST:
+
+1. **Set `NEXT_PUBLIC_BILAN_MODE=server`** - Demo tokens are prohibited in production
+2. **Provide `NEXT_PUBLIC_BILAN_API_KEY`** - Your actual Bilan API key
+3. **Set `NEXT_PUBLIC_BILAN_ENDPOINT`** - Your production Bilan server URL
+
+```bash
+# ✅ Production .env.local
+NEXT_PUBLIC_BILAN_MODE=server
+NEXT_PUBLIC_BILAN_ENDPOINT=https://your-bilan-server.com
+NEXT_PUBLIC_BILAN_API_KEY=your-production-api-key
+NEXT_PUBLIC_DEBUG=false
+```
+
+**Production Safety Check**: The app will throw a runtime error if `NODE_ENV=production` and `BILAN_MODE` is not `server`, preventing accidental use of demo tokens in production.
 
 ### Available Models
 
